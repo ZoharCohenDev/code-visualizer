@@ -764,3 +764,249 @@ body{
   font-size: 50px;
 }
 
+
+.treeVizWrap{
+  margin-top: 14px;
+  border: 2px solid rgba(255,255,255,0.10);
+  border-radius: 16px;
+  background: rgba(0,0,0,0.12);
+  overflow: auto;
+  padding: 14px;
+}
+
+.treeSvg{
+  display:block;
+  margin: 0 auto;
+}
+
+.treeEdge{
+  stroke: rgba(255,255,255,0.22);
+  stroke-width: 2.2;
+}
+
+.treeNodeCircle{
+  fill: url(#nodeFill);
+  stroke: url(#nodeStroke);
+  stroke-width: 3.2;
+  filter: url(#softGlow);
+}
+
+.treeNodeText{
+  fill: rgba(255,255,255,0.94);
+  font-weight: 900;
+  font-size: 16px;
+  user-select: none;
+}
+
+/* STACK + QUEUE ויזואל */
+.stackViz{
+  margin-top: 14px;
+  position: relative;
+  min-height: 180px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+}
+
+.stackTube{
+  position:absolute;
+  top: 8px;
+  bottom: 18px;
+  width: 220px;
+  border-left: 3px solid rgba(255,255,255,0.14);
+  border-right: 3px solid rgba(255,255,255,0.14);
+  border-radius: 14px;
+  pointer-events:none;
+}
+
+.stackBase{
+  position:absolute;
+  bottom: 8px;
+  width: 260px;
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(124,92,255,0.9), rgba(45,226,230,0.85));
+  box-shadow: 0 10px 30px rgba(124,92,255,0.25);
+}
+
+.stackItems{
+  width: 220px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  gap: 0;
+  padding-bottom: 20px;
+}
+
+.stackBullet{
+  height: 44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border: 2px solid rgba(255,255,255,0.14);
+  border-bottom: none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.16), rgba(45,226,230,0.10));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 900;
+  color: rgba(255,255,255,0.92);
+}
+
+.stackBullet:first-child{
+  border-radius: 12px 12px 0 0;
+}
+
+.stackBullet:last-child{
+  border-bottom: 2px solid rgba(255,255,255,0.14);
+  border-radius: 0 0 12px 12px;
+}
+
+.stackBullet.top{
+  outline: 2px solid rgba(45,226,230,0.25);
+  box-shadow: 0 12px 30px rgba(45,226,230,0.10);
+}
+
+.queueViz{
+  margin-top: 14px;
+  display:grid;
+  gap: 10px;
+}
+
+.queueBelt{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  overflow:auto;
+  padding: 14px;
+  border-radius: 16px;
+  border: 2px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.12);
+}
+
+.queueBox{
+  min-width: 72px;
+  height: 56px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.14);
+  background: linear-gradient(135deg, rgba(124,92,255,0.16), rgba(45,226,230,0.10));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 900;
+  color: rgba(255,255,255,0.92);
+  flex-shrink: 0;
+}
+
+.queueTag{
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  opacity: 0.85;
+}
+
+.queueTag.front{
+  color: rgba(45,226,230,0.95);
+}
+
+.queueTag.back{
+  color: rgba(124,92,255,0.95);
+}
+
+.appRoot{
+  min-height: 100vh;
+  padding: 18px;
+  max-width: 1250px;
+  margin: 0 auto;
+}
+
+.topBar{
+  display:flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.topTitle{
+  margin: 0;
+}
+
+.topDesc{
+  opacity: 0.75;
+  margin-top: 6px;
+}
+
+.topRight{
+  opacity: 0.9;
+  text-align: right;
+}
+
+.topLine{
+  opacity: 0.75;
+}
+
+.topLabel{
+  margin-top: 6px;
+  opacity: 0.75;
+}
+
+.topError{
+  margin-top: 6px;
+  color: salmon;
+  font-weight: 800;
+}
+
+.layoutTop{
+  display:grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+
+.leftCol{
+  display:grid;
+  gap: 12px;
+}
+
+.rightCol{
+  display:grid;
+  gap: 12px;
+}
+
+.layoutBottom{
+  margin-top: 14px;
+}
+
+.dsGrid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dsCol{
+  display:grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.dsColHead{
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  opacity: 0.9;
+}
+
+@media (max-width: 1050px){
+  .layoutTop{
+    grid-template-columns: 1fr;
+  }
+  .topRight{
+    text-align: left;
+  }
+}
+
+@media (max-width: 900px){
+  .dsGrid{
+    grid-template-columns: 1fr;
+  }
+}
