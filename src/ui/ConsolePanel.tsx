@@ -1,8 +1,16 @@
 import Panel from "./Panel";
+import { useStickToBottom } from "./useStickToBottom";
 
 export default function ConsolePanel({ lines }: { lines: string[] }) {
+  const { ref, onScroll } = useStickToBottom<HTMLDivElement>([lines.length]);
+
   return (
-    <Panel title="Console" subtitle={lines.length ? `${lines.length} message(s)` : "empty"}>
+    <Panel
+      title="Console"
+      subtitle={lines.length ? `${lines.length} message(s)` : "empty"}
+      bodyRef={ref}
+      onBodyScroll={onScroll}
+    >
       <div className="console">
         {lines.length ? (
           lines.map((l, i) => (

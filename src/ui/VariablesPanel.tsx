@@ -1,10 +1,17 @@
 import Panel from "./Panel";
+import { useStickToBottom } from "./useStickToBottom";
 
 export default function VariablesPanel({ vars }: { vars: Record<string, any> }) {
   const entries = Object.entries(vars);
+  const { ref, onScroll } = useStickToBottom<HTMLDivElement>([entries.length]);
 
   return (
-    <Panel title="Variables" subtitle={entries.length ? `${entries.length} value(s)` : "empty"}>
+    <Panel
+      title="Variables"
+      subtitle={entries.length ? `${entries.length} value(s)` : "empty"}
+      bodyRef={ref}
+      onBodyScroll={onScroll}
+    >
       <div className="kv">
         {entries.length ? (
           entries.map(([k, v]) => (

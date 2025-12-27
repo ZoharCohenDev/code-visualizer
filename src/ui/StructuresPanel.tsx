@@ -216,7 +216,7 @@ export default function StructuresPanel({ state }: { state: ExecutionState | nul
                   </div>
 
                   <div className="queueViz">
-                    <div className="queueTag front">FRONT</div>
+                    <div className="queueTag front"></div>
                     <div className="queueBelt">
                       {items.length ? (
                         items.map((v, i) => (
@@ -228,7 +228,7 @@ export default function StructuresPanel({ state }: { state: ExecutionState | nul
                         <div className="mutedTiny">Empty</div>
                       )}
                     </div>
-                    <div className="queueTag back">BACK</div>
+                    <div className="queueTag back"></div>
                   </div>
                 </div>
               );
