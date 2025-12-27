@@ -1,6 +1,6 @@
 import type { ExecutionState, Step } from "./types";
 import { stepSnapShot } from "./types";
-
+// מצב פתיחה לדוגמה של הרצת קוד
 const base: ExecutionState = {
   stack: [{ name: "global", locals: {} }],
   console: [],
@@ -8,7 +8,7 @@ const base: ExecutionState = {
   heap: {},
   heapSeq: 1,
 };
-
+// סדרת צעדים לדוגמה של הרצת קוד
 export const MOCK_STEPS: Step[] = [
   { label: "Start", state: stepSnapShot(base) },
   {

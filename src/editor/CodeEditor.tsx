@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+// עורך קוד מבוסס מונאקו עם הדגשת שורה פעילה
 import Editor from "@monaco-editor/react";
 
 type Props = {
@@ -11,7 +12,7 @@ export default function CodeEditor({ value, onChange, activeLine }: Props) {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
   const [isReady, setIsReady] = useState(false);
-
+//קובע איזה שורה תהיה מודגשת בעורך הקוד
   const decoration = useMemo(() => {
     if (!activeLine) return null;
     return {
@@ -23,7 +24,7 @@ export default function CodeEditor({ value, onChange, activeLine }: Props) {
       },
     };
   }, [activeLine]);
-
+// מעדכן את ההדגשה בעורך הקוד כאשר השורה הפעילה משתנה
   useEffect(() => {
     if (!isReady || !editorRef.current || !monacoRef.current) return;
     if (!decoration) return;
@@ -47,7 +48,7 @@ export default function CodeEditor({ value, onChange, activeLine }: Props) {
 
     editor.revealLineInCenter(activeLine);
   }, [isReady, decoration, activeLine]);
-
+//רינדור של עורך הקוד עם הגדרות מותאמות אישית
   return (
     <div className="editorWrap">
       <div className="editorTop">
