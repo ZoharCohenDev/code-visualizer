@@ -957,21 +957,29 @@ body{
 }
 
 .layoutTop{
-  display:grid;
-  grid-template-columns: 1.15fr 0.85fr;
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
   gap: 14px;
   margin-top: 14px;
-  align-items: start;
+  align-items: stretch; 
+}
+
+.leftCol,
+.rightCol{
+  min-height: 0;
+  align-self: stretch;
 }
 
 .leftCol{
-  display:grid;
+  display: grid;
+  grid-template-rows: auto 1fr auto; 
   gap: 12px;
+  min-height: 0;
 }
 
-.rightCol{
-  display:grid;
-  gap: 12px;
+.editorCard{
+  height: 91.9% !important;
+  min-height: 0 !important;
 }
 
 .layoutBottom{
@@ -1009,4 +1017,126 @@ body{
   .dsGrid{
     grid-template-columns: 1fr;
   }
+}
+
+
+/* =========================
+   TOP LAYOUT: stable + symmetric
+   ========================= */
+
+/* גובה קבוע למסך, כדי ששום דבר לא “יקפוץ” */
+.layoutTop{
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 14px;
+  margin-top: 14px;
+  align-items: stretch;
+
+  height: clamp(620px, calc(100vh - 230px), 880px);
+}
+
+/* חשוב: מאפשר לילדים עם overflow לעבוד */
+.leftCol,
+.rightCol{
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* LEFT: editor fills the whole column */
+.leftCol{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.editorWrap{
+  flex: 1;
+  min-height: 0;
+
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+/* הכי חשוב: לבטל גובה קבוע / אחוזים */
+.editorCard{
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* שהעורך עצמו יתפוס 100% גובה */
+.editorCard,
+.editorCard > *{
+  height: 100%;
+  min-height: 0;
+}
+
+/* Monaco / CodeMirror (לא מזיק גם אם לא קיים) */
+.editorCard :where(.monaco-editor, .monaco-editor .overflow-guard, .cm-editor, .CodeMirror){
+  height: 100% !important;
+}
+
+/* RIGHT: 3 panels share the column height equally + scroll inside */
+.rightCol{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.rightCol > .panel{
+  flex: 1;
+  min-height: 0;
+
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+/* התוכן של הפאנלים גולל פנימה במקום לנפח את כל העמוד */
+.panelBody{
+  min-height: 0;
+  overflow: auto;
+}
+
+/* אם יש לך רשימות/ויזואליזציות שמנפחות גובה */
+.list,
+.console,
+.kv,
+.treeVizWrap,
+.queueBelt,
+.dsItems{
+  min-height: 0;
+}
+
+/* מובייל: יורד לטור אחד וגובה טבעי */
+@media (max-width: 1050px){
+  .layoutTop{
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .rightCol > .panel{
+    flex: 0 0 auto;
+  }
+
+  .panelBody{
+    max-height: 320px;
+  }
+
+  .editorCard{
+    height: 520px !important;
+    min-height: 520px !important;
+  }
+}
+
+.panelBody{
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.console{
+  display: grid;
+  gap: 10px;
 }

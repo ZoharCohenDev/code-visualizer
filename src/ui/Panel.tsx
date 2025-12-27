@@ -1,21 +1,30 @@
-import type { ReactNode } from "react";
+import React from "react";
 
 export default function Panel({
   title,
   subtitle,
   children,
+  bodyRef,
+  onBodyScroll,
 }: {
   title: string;
   subtitle?: string;
-  children: ReactNode;
+  children: React.ReactNode;
+  bodyRef?: React.Ref<HTMLDivElement>;
+  onBodyScroll?: React.UIEventHandler<HTMLDivElement>;
 }) {
   return (
     <div className="panel">
       <div className="panelHead">
-        <div className="panelTitle">{title}</div>
-        {subtitle ? <div className="panelSub">{subtitle}</div> : null}
+        <div>
+          <div className="panelTitle">{title}</div>
+          {subtitle ? <div className="panelSub">{subtitle}</div> : null}
+        </div>
       </div>
-      <div className="panelBody">{children}</div>
+
+      <div className="panelBody" ref={bodyRef} onScroll={onBodyScroll}>
+        {children}
+      </div>
     </div>
   );
 }

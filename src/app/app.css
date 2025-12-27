@@ -85,7 +85,7 @@
   color: #061018;
   padding: 10px 14px;
   border-radius: 12px;
-  cursor:pointer;
+  cursor: pointer;
   font-weight: 950;
   transition: 160ms ease;
   box-shadow: 0 14px 40px rgba(0,0,0,0.25);
@@ -113,10 +113,17 @@
   align-items: start;
 }
 
+.editorWrap,
+.rightGrid{
+  min-height: 0;
+  align-self: stretch;
+}
+
 .editorWrap{
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
   gap: 10px;
+  min-height: 0;
 }
 
 .editorTop{
@@ -138,13 +145,23 @@
 }
 
 .editorCard{
-  height: calc(100vh - 170px);
-  min-height: 520px;
+  align-self: stretch;
+  min-height: 0;
+  height: 100%;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.04);
   overflow: hidden;
   box-shadow: var(--shadow);
+}
+
+.editorCard > *{
+  height: 100%;
+  min-height: 0;
+}
+
+.editorCard :where(.monaco-editor, .cm-editor, .CodeMirror, textarea, pre){
+  height: 100%;
 }
 
 .rightGrid{
@@ -169,7 +186,7 @@
   gap: 10px;
 }
 
-.panelTitle{
+.panelHead .panelTitle{
   font-weight: 950;
   letter-spacing: -0.2px;
 }
@@ -182,6 +199,14 @@
 .panelBody{
   padding: 12px 14px 14px;
 }
+
+.panelTitle{
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.panelBlock{ margin-top: 14px; }
+.panelSubTitle{ font-weight: 900; opacity: 0.9; margin-bottom: 10px; }
 
 .list{
   display: grid;
@@ -294,19 +319,6 @@
   color: rgba(255,255,255,0.88);
 }
 
-@media (max-width: 980px){
-  .grid{
-    grid-template-columns: 1fr;
-  }
-  .editorCard{
-    height: 520px;
-  }
-}
-
-.panelTitle{ font-weight: 900; margin-bottom: 10px; }
-.panelBlock{ margin-top: 14px; }
-.panelSubTitle{ font-weight: 900; opacity: 0.9; margin-bottom: 10px; }
-
 .dsCard{
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.04);
@@ -315,12 +327,19 @@
   margin-bottom: 10px;
 }
 
-.dsRow{ display:flex; justify-content: space-between; align-items:center; gap: 10px; margin-bottom: 10px; }
+.dsRow{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
 .dsName{ font-weight: 900; }
 .dsMeta{ opacity: 0.7; font-size: 12px; }
 
 .dsItems{
-  display:flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
@@ -334,8 +353,9 @@
   font-size: 12px;
 }
 
-.treeLevels{ display:flex; flex-direction: column; gap: 8px; }
-.treeLevel{ display:flex; gap: 8px; flex-wrap: wrap; }
+.treeLevels{ display: flex; flex-direction: column; gap: 8px; }
+.treeLevel{ display: flex; gap: 8px; flex-wrap: wrap; }
+
 .treeNode{
   min-width: 34px;
   text-align: center;
@@ -345,4 +365,19 @@
   padding: 6px 10px;
   font-weight: 900;
   font-size: 12px;
+}
+
+@media (max-width: 980px){
+  .grid{
+    grid-template-columns: 1fr;
+  }
+
+  .editorWrap{
+    grid-template-rows: auto auto auto;
+  }
+
+  .editorCard{
+    height: 520px;
+    min-height: 520px;
+  }
 }
