@@ -1,20 +1,30 @@
 import Panel from "./Panel";
+import type { StackFrame } from "../engine/types";
 
-export default function VariablesPanel({ vars }: { vars: Record<string, any> }) {
-  const entries = Object.entries(vars);
+export default function StackPanel({
+  stack,
+  activeLine,
+}: {
+  stack: StackFrame[];
+  activeLine?: number;
+}) {
+  const view = [...stack].reverse();
 
   return (
-    <Panel title="Variables" subtitle={entries.length ? `${entries.length} value(s)` : "empty"}>
-      <div className="kv">
-        {entries.length ? (
-          entries.map(([k, v]) => (
-            <div className="kvRow" key={k}>
-              <div className="kvKey">{k}</div>
-              <div className="kvVal">{String(v)}</div>
+    <Panel title="Call Stack" subtitle={stack.length ? `${stack.length} frame(s)` : "empty"}>
+      <div className="list">
+        {view.length ? (
+          view.map((f, i) => (
+            <div className="row" key={`${f.name}-${i}`}>
+              <div className="rowMain">
+                <div className="rowTitle">{f.name}</div>
+                {activeLine ? <div className="rowSub">line {activeLine}</div> : null}
+              </div>
+              <div className="chip">{i === 0 ? "active" : "frame"}</div>
             </div>
           ))
         ) : (
-          <div className="empty">Run the code to see variables</div>
+          <div className="empty">No frames yet</div>
         )}
       </div>
     </Panel>
