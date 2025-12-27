@@ -1,34 +1,766 @@
 :root{
-  --bg: #070A12;
-  --card: rgba(255,255,255,0.06);
-  --stroke: rgba(255,255,255,0.12);
+  color-scheme: dark;
+  --bg: #0b0c10;
+  --card: rgba(255,255,255,0.04);
+  --card2: rgba(255,255,255,0.03);
+  --border: rgba(255,255,255,0.12);
+  --border2: rgba(255,255,255,0.16);
   --text: rgba(255,255,255,0.92);
   --muted: rgba(255,255,255,0.68);
-  --muted2: rgba(255,255,255,0.55);
-  --accent: #7c5cff;
-  --accent2: #2de2e6;
-  --shadow: 0 22px 70px rgba(0,0,0,0.45);
+  --muted2: rgba(255,255,255,0.48);
+  --accent: rgba(124,92,255,0.9);
+  --accent2: rgba(45,226,230,0.85);
+  --shadow: 0 20px 70px rgba(0,0,0,0.45);
+  --r: 16px;
 }
 
-*{ box-sizing: border-box; }
-html, body { height: 100%; }
-body{
+*{ 
+  box-sizing:border-box; 
   margin: 0;
-  min-height: 100vh;
-  background:
-    radial-gradient(1200px 700px at 15% 10%, rgba(124,92,255,0.18), transparent 55%),
-    radial-gradient(900px 600px at 85% 25%, rgba(45,226,230,0.14), transparent 55%),
-    #070A12;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  background-size: cover;
-  color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  padding: 0;
 }
 
-a{ color: inherit; text-decoration: none; }
-button{ font-family: inherit; }
+html, body{ height:100%; }
 
-::-webkit-scrollbar{ height: 10px; width: 10px; }
-::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.14); border-radius: 999px; }
-::-webkit-scrollbar-track{ background: rgba(0,0,0,0.18); }
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background:
+    radial-gradient(900px 500px at 10% -10%, rgba(124,92,255,0.18), transparent 60%),
+    radial-gradient(900px 500px at 90% 0%, rgba(45,226,230,0.12), transparent 55%),
+    var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* Controls */
+.controls{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-bottom: 20px;
+}
+
+.btn{
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 14px;
+  border: 2px solid var(--border2);
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  color: var(--text);
+  cursor: pointer;
+  transition: all .2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before{
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transition: left 0.5s;
+}
+
+.btn:hover::before{
+  left: 100%;
+}
+
+.btn:hover{
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+  border-color: var(--accent2);
+  box-shadow: 0 8px 24px rgba(45,226,230,0.2);
+}
+
+.btn:active{
+  transform: translateY(0px);
+}
+
+.btn.ghost{
+  background: transparent;
+  border: 2px solid var(--border);
+  color: var(--text);
+}
+
+.btn.ghost:hover{
+  border-color: var(--accent);
+  background: rgba(124,92,255,0.08);
+}
+
+.btn.disabled,
+.btn:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  pointer-events: none;
+}
+
+/* Editor */
+.editorWrap{
+  border: 2px solid var(--border);
+  border-radius: var(--r);
+  overflow:hidden;
+  background: var(--card2);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.editorTop{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 2px solid var(--border);
+  background: linear-gradient(135deg, rgba(124,92,255,0.05), rgba(45,226,230,0.03));
+}
+
+.editorTitle{
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 0.3px;
+  color: var(--text);
+}
+
+.editorHint{
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.editorCard{
+  height: 320px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+/* Panel */
+.panel{
+  border: 2px solid var(--border);
+  border-radius: var(--r);
+  background: var(--card2);
+  overflow:hidden;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+}
+
+.panelHead{
+  padding: 16px 20px;
+  border-bottom: 2px solid var(--border);
+  background: linear-gradient(135deg, rgba(124,92,255,0.06), rgba(45,226,230,0.04));
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.panelTitle{
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.panelSub{
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.panelBody{
+  padding: 20px;
+}
+
+/* Key-Value Display */
+.kv{
+  display:grid;
+  gap:12px;
+}
+
+.kvRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding: 14px 16px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  transition: all 0.3s ease;
+}
+
+.kvRow:hover{
+  border-color: rgba(124,92,255,0.3);
+  background: linear-gradient(135deg, rgba(124,92,255,0.08), rgba(45,226,230,0.04));
+  transform: translateX(4px);
+}
+
+.kvKey{
+  font-weight: 900;
+  font-size: 14px;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.3px;
+}
+
+.kvVal{
+  color: var(--accent2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 10px;
+  background: rgba(45,226,230,0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(45,226,230,0.2);
+}
+
+/* Console */
+.console{
+  display:grid;
+  gap:10px;
+}
+
+.consoleLine{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  padding: 12px 16px;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  transition: all 0.3s ease;
+}
+
+.consoleLine:hover{
+  background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border-color: rgba(45,226,230,0.3);
+}
+
+.consolePrompt{
+  color: var(--accent2);
+  font-weight: 900;
+  font-size: 16px;
+  text-shadow: 0 0 10px rgba(45,226,230,0.5);
+}
+
+.consoleText{
+  color: rgba(255,255,255,0.88);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+/* ============================================
+   STACK VISUALIZATION - Physical Stack
+   ============================================ */
+.list{
+  display:flex;
+  flex-direction:column-reverse;
+  gap:0;
+  align-items:center;
+  padding: 40px 60px 30px;
+  position:relative;
+  min-height: 200px;
+  background: 
+    linear-gradient(90deg, 
+      transparent 0%, 
+      transparent calc(50% - 100px), 
+      rgba(255,255,255,0.02) calc(50% - 100px),
+      rgba(255,255,255,0.02) calc(50% + 100px),
+      transparent calc(50% + 100px),
+      transparent 100%
+    );
+}
+
+/* הבסיס של המחסנית */
+.list::before{
+  content:'';
+  position:absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 12px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(124,92,255,0.6);
+}
+
+/* קווים אנכיים משני הצדדים */
+.list::after{
+  content:'';
+  position:absolute;
+  top: 30px;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  border-left: 3px solid rgba(255,255,255,0.15);
+  border-right: 3px solid rgba(255,255,255,0.15);
+  pointer-events: none;
+}
+
+.row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  padding: 18px 40px;
+  width: 200px;
+  border: 2px solid var(--border2);
+  border-bottom: none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.12), rgba(45,226,230,0.08));
+  box-shadow: 
+    inset 0 2px 0 rgba(255,255,255,0.1),
+    0 2px 8px rgba(0,0,0,0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
+}
+
+.row:hover{
+  background: linear-gradient(135deg, rgba(124,92,255,0.18), rgba(45,226,230,0.12));
+  box-shadow: 
+    inset 0 2px 0 rgba(255,255,255,0.15),
+    0 4px 16px rgba(124,92,255,0.4);
+}
+
+/* הפריט התחתון */
+.row:first-child{
+  border-bottom: 2px solid var(--border2);
+  border-radius: 0 0 8px 8px;
+}
+
+/* הפריט העליון - TOP */
+.row:last-child{
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(135deg, rgba(124,92,255,0.25), rgba(45,226,230,0.18));
+  box-shadow: 
+    inset 0 2px 0 rgba(255,255,255,0.2),
+    0 6px 24px rgba(124,92,255,0.6);
+  animation: stackPulse 2s ease-in-out infinite;
+  border-top: 3px solid var(--accent);
+}
+
+.row:last-child::before{
+  content: 'TOP';
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: 2px;
+  background: var(--bg);
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 2px solid var(--accent);
+}
+
+@keyframes stackPulse {
+  0%, 100% { 
+    box-shadow: 
+      inset 0 2px 0 rgba(255,255,255,0.2),
+      0 6px 24px rgba(124,92,255,0.6);
+  }
+  50% { 
+    box-shadow: 
+      inset 0 2px 0 rgba(255,255,255,0.25),
+      0 10px 36px rgba(124,92,255,0.8);
+  }
+}
+
+.rowMain{
+  display:grid;
+  gap:6px;
+}
+
+.rowTitle{
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+
+.rowSub{
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.chip{
+  font-size: 12px;
+  font-weight: 900;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.88);
+  background: rgba(255,255,255,0.05);
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.chip:hover{
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.chip.active{
+  border-color: rgba(45,226,230,0.5);
+  background: rgba(45,226,230,0.12);
+  color: var(--accent2);
+  box-shadow: 0 4px 12px rgba(45,226,230,0.3);
+}
+
+/* ============================================
+   STRUCTURES PANEL - Queue & Tree
+   ============================================ */
+.panelBlock{
+  margin-top: 16px;
+  padding: 20px;
+  border-top: 2px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.02);
+}
+
+.panelSubTitle{
+  font-weight: 900;
+  font-size: 15px;
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panelSubTitle::before{
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+}
+
+.mutedTiny{
+  color: var(--muted2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Data Structure Card */
+.dsCard{
+  border: 3px solid rgba(255,255,255,0.14);
+  border-radius: 18px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  margin-bottom: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.dsCard:hover{
+  border-color: rgba(124,92,255,0.3);
+  box-shadow: 0 12px 50px rgba(124,92,255,0.2);
+  transform: translateY(-2px);
+}
+
+.dsRow{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.dsName{
+  font-weight: 900;
+  font-size: 16px;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: 0.5px;
+}
+
+.dsMeta{
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ============================================
+   QUEUE VISUALIZATION - Horizontal Boxes with Rounded Corners
+   ============================================ */
+.dsCard.queue{
+  padding: 40px 30px 50px;
+  background: linear-gradient(135deg, rgba(124,92,255,0.04), rgba(45,226,230,0.04));
+  border-color: rgba(45,226,230,0.15);
+  position: relative;
+  overflow: visible;
+}
+
+.dsItems{
+  display:flex;
+  gap: 12px;
+  flex-wrap: nowrap;
+  margin-top: 20px;
+  align-items:center;
+  overflow-x: auto;
+  padding: 0;
+  position:relative;
+  scroll-behavior: smooth;
+}
+
+.dsItems::-webkit-scrollbar{
+  height: 8px;
+  margin-top: 10px;
+}
+
+.dsItems::-webkit-scrollbar-track{
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+}
+
+.dsItems::-webkit-scrollbar-thumb{
+  background: var(--accent2);
+  border-radius: 4px;
+}
+
+.dsItem{
+  padding: 28px 32px;
+  border-radius: 18px;
+  border: 3px solid var(--border2);
+  background: linear-gradient(135deg, #a4c639 0%, #8fb820 100%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 22px;
+  font-weight: 900;
+  color: rgba(0,0,0,0.8);
+  box-shadow: 
+    0 8px 24px rgba(0,0,0,0.3),
+    inset 0 2px 0 rgba(255,255,255,0.3);
+  position:relative;
+  min-width: 80px;
+  text-align:center;
+  flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dsItem:hover{
+  transform: translateY(-6px) scale(1.05);
+  box-shadow: 
+    0 12px 36px rgba(164,198,57,0.5),
+    inset 0 2px 0 rgba(255,255,255,0.4);
+}
+
+/* הפריט הראשון - HEAD */
+.dsItem:first-child{
+  background: linear-gradient(135deg, #a4c639 0%, #8fb820 100%);
+  border-color: rgba(164,198,57,0.6);
+  box-shadow: 
+    0 10px 32px rgba(164,198,57,0.5),
+    inset 0 2px 0 rgba(255,255,255,0.35);
+}
+
+.dsItem:first-child::after{
+  content: '';
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 12px solid var(--accent2);
+}
+
+.dsItem:first-child::before{
+  content: 'head';
+  position: absolute;
+  bottom: -52px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 900;
+  color: #4a5f3a;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* הפריט האחרון - TAIL */
+.dsItem:last-child{
+  background: linear-gradient(135deg, #a4c639 0%, #8fb820 100%);
+  border-color: rgba(164,198,57,0.6);
+}
+
+.dsItem:last-child::after{
+  content: '';
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 12px solid var(--accent);
+}
+
+.dsItem:last-child::before{
+  content: 'tail';
+  position: absolute;
+  bottom: -52px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 900;
+  color: #4a5f3a;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* ללא חיצים בין הפריטים */
+.dsItem:not(:last-child)::after{
+  display: none;
+}
+
+/* ============================================
+   BINARY TREE VISUALIZATION - Clean Circles with Lines
+   ============================================ */
+.treeLevels{
+  display:grid;
+  gap: 80px;
+  margin-top: 40px;
+  padding: 40px 20px;
+  position:relative;
+  background: transparent;
+  border-radius: 16px;
+}
+
+.treeLevel{
+  display:flex;
+  gap: clamp(20px, 5vw, 60px);
+  justify-content:center;
+  align-items:center;
+  position:relative;
+}
+
+.treeNode{
+  min-width: 540px;
+  min-height: 540px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 20px;
+  border-radius: 50%;
+  border: 4px solid rgba(0,0,0,0.8);
+  background: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 22px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.3),
+    inset 0 2px 4px rgba(0,0,0,0.1);
+  position:relative;
+  z-index: 3;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.treeNode:hover{
+  transform: scale(1.1);
+  box-shadow: 
+    0 8px 24px rgba(0,0,0,0.4),
+    inset 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* קווי חיבור בין הצמתים */
+.treeLevel:not(:last-child){
+  position: relative;
+}
+
+.treeLevel:not(:last-child) .treeNode::before,
+.treeLevel:not(:last-child) .treeNode::after{
+  content:'';
+  position:absolute;
+  top: 100%;
+  width: 2px;
+  height: 75px;
+  background: rgba(0,0,0,0.6);
+  z-index: 1;
+}
+
+.treeLevel:not(:last-child) .treeNode::before{
+  left: 30%;
+  transform: translateX(-50%) rotate(-35deg);
+  transform-origin: top center;
+}
+
+.treeLevel:not(:last-child) .treeNode::after{
+  right: 30%;
+  transform: translateX(50%) rotate(35deg);
+  transform-origin: top center;
+}
+
+/* עיצוב מיוחד לצמתים ריקים או null */
+.treeNode.empty-node{
+  background: transparent;
+  border: 2px dashed rgba(255,255,255,0.3);
+  color: var(--muted2);
+  font-size: 16px;
+}
+
+.treeNode.empty-node::before,
+.treeNode.empty-node::after{
+  display: none;
+}
+
+/* Empty state */
+.empty{
+  color: var(--muted2);
+  font-size: 14px;
+  padding: 40px 20px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  opacity: 0.7;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .panelBody {
+    padding: 16px;
+  }
+  
+  .dsItems {
+    gap: 16px;
+  }
+  
+  .treeNode {
+    min-width: 50px;
+    min-height: 50px;
+    font-size: 16px;
+  }
+  
+  .treeLevels {
+    gap: 50px;
+  }
+}
+
+.treeNodeCircle{
+  stroke-width: 60;
+}
+
+.treeNodeText{
+  fill: #fff !important;
+  font-size: 50px;
+}
+

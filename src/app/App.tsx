@@ -1,13 +1,52 @@
 import { useMemo, useState } from "react";
-import { runCodeToSteps } from "../engine/interpreter";
-import type { Step } from "../engine/types";
 import "../index.css";
 
-const DEFAULT_CODE = `let x = 1;
-let y = 2;
-console.log(x + y);
-x += 10;
-console.log(x);`;
+import CodeEditor from "../editor/CodeEditor";
+import Controls from "../ui/Controls";
+import VariablesPanel from "../ui/VariablesPanel";
+import ConsolePanel from "../ui/ConsolePanel";
+import StackPanel from "../ui/StackPanel";
+import StructuresPanel from "../ui/StructuresPanel";
+
+import { runCodeToSteps } from "../interpreter/index";
+import type { ExecutionState, Step, Value } from "../engine/types";
+
+const DEFAULT_CODE = `let s = Stack();
+s.push(1);
+s.push(2);
+console.log("stack peek:", s.peek());
+
+let q = Queue();
+q.enqueue(10);
+q.enqueue(20);
+console.log("queue dequeue:", q.dequeue());
+
+let t = BinaryTree();
+t.insert(5);
+t.insert(2);
+t.insert(8);
+console.log("contains 2:", t.contains(2));
+console.log("inOrder:", t.inOrder());
+`;
+
+function isRef(v: Value): v is { $ref: string } {
+  return !!v && typeof v === "object" && "$ref" in v;
+}
+
+function fmtValue(state: ExecutionState, v: Value): string {
+  if (isRef(v)) {
+    const o = state.heap[v.$ref];
+    if (!o) return "[ref]";
+    if (o.kind === "Array") return `[${o.items.map((x) => fmtValue(state, x)).join(", ")}]`;
+    if (o.kind === "Stack") return `Stack(${o.items.map((x) => fmtValue(state, x)).join(", ")})`;
+    if (o.kind === "Queue") return `Queue(${o.items.map((x) => fmtValue(state, x)).join(", ")})`;
+    if (o.kind === "BinaryTree") return `BinaryTree(${o.root ? fmtValue(state, o.root) : "empty"})`;
+    if (o.kind === "TreeNode") return `Node(${fmtValue(state, o.value)})`;
+    if (o.kind === "Function") return `function ${o.name}()`;
+    return `Object(${Object.keys(o.props).length})`;
+  }
+  return String(v);
+}
 
 export default function App() {
   const [code, setCode] = useState(DEFAULT_CODE);
@@ -15,11 +54,14 @@ export default function App() {
   const [idx, setIdx] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const current = steps[idx]?.state;
+  const current = steps[idx]?.state ?? null;
 
   const vars = useMemo(() => {
-    if (!current?.stack?.length) return {};
-    return current.stack[current.stack.length - 1].locals ?? {};
+    if (!current) return {};
+    const activeFrame = current.stack[current.stack.length - 1];
+    return Object.fromEntries(
+      Object.entries(activeFrame.locals).map(([k, v]) => [k, fmtValue(current, v)])
+    );
   }, [current]);
 
   const consoleLines = useMemo(() => {
@@ -28,136 +70,57 @@ export default function App() {
 
   const label = steps[idx]?.label ?? "";
 
-  const run = () => {
+  const canStep = idx < steps.length - 1;
+
+  const onRun = () => {
     const res = runCodeToSteps(code);
     setSteps(res.steps);
     setIdx(0);
     setError(res.error);
   };
 
-  const canPrev = idx > 0;
-  const canNext = idx < steps.length - 1;
+  const onStep = () => {
+    setIdx((i) => Math.min(steps.length - 1, i + 1));
+  };
+
+  const onReset = () => {
+    setIdx(0);
+    setSteps([]);
+    setError(null);
+  };
 
   return (
-    <div style={{ minHeight: "100vh", padding: 18, maxWidth: 1100, margin: "0 auto" }}>
-      <h2 style={{ margin: 0 }}>Code Trace (line by line)</h2>
-      <div style={{ opacity: 0.8, marginTop: 6 }}>
-        Paste code, press Run, then Next/Prev to watch variables + console update.
+    <div style={{ minHeight: "100vh", padding: 18, maxWidth: 1250, margin: "0 auto" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0 }}>Code Trace</h2>
+          <div style={{ opacity: 0.75, marginTop: 6 }}>
+            Run ואז Step כדי לראות משתנים, קונסול, מחסנית, ותצוגה ויזואלית של מבני נתונים
+          </div>
+        </div>
+
+        <div style={{ opacity: 0.85, textAlign: "right" }}>
+          <div>
+            <b>Step:</b>{" "}
+            {steps.length ? `${idx} / ${steps.length - 1}` : "—"}{" "}
+            {current ? <span style={{ opacity: 0.75 }}>| line {current.currentLine}</span> : null}
+          </div>
+          <div style={{ marginTop: 6, opacity: 0.75 }}>{label}</div>
+          {error ? <div style={{ marginTop: 6, color: "salmon", fontWeight: 800 }}>Error: {error}</div> : null}
+        </div>
       </div>
 
-      <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
-        <textarea
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          spellCheck={false}
-          style={{
-            width: "100%",
-            height: 190,
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.15)",
-            padding: 12,
-            background: "rgba(255,255,255,0.04)",
-            color: "rgba(255,255,255,0.92)",
-            outline: "none",
-            fontSize: 14,
-            lineHeight: 1.55,
-            resize: "vertical",
-          }}
-        />
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button
-            onClick={run}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 12,
-              fontWeight: 800,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
-              cursor: "pointer",
-            }}
-          >
-            Run
-          </button>
-
-          <button
-            onClick={() => setIdx((i) => Math.max(0, i - 1))}
-            disabled={!canPrev}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 12,
-              fontWeight: 800,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
-              cursor: canPrev ? "pointer" : "not-allowed",
-              opacity: canPrev ? 1 : 0.5,
-            }}
-          >
-            Prev
-          </button>
-
-          <button
-            onClick={() => setIdx((i) => Math.min(steps.length - 1, i + 1))}
-            disabled={!canNext}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 12,
-              fontWeight: 800,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.92)",
-              cursor: canNext ? "pointer" : "not-allowed",
-              opacity: canNext ? 1 : 0.5,
-            }}
-          >
-            Next
-          </button>
+      <div style={{ display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: 14, marginTop: 14 }}>
+        <div style={{ display: "grid", gap: 12 }}>
+          <CodeEditor value={code} onChange={setCode} activeLine={current?.currentLine} />
+          <Controls canStep={canStep} isRunning={!!steps.length} onRun={onRun} onStep={onStep} onReset={onReset} />
         </div>
 
-        {error ? (
-          <div style={{ color: "salmon", fontWeight: 700 }}>
-            Error: {error}
-          </div>
-        ) : null}
-
-        <div style={{ opacity: 0.9 }}>
-          <b>Step:</b> {steps.length ? `${idx} / ${steps.length - 1}` : "—"}{" "}
-          <span style={{ opacity: 0.85 }}>
-            {steps.length ? `| line ${current?.currentLine ?? 1}` : ""}
-          </span>
-          <div style={{ marginTop: 6, opacity: 0.85 }}>{label}</div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div
-            style={{
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 14,
-              padding: 12,
-              background: "rgba(255,255,255,0.03)",
-            }}
-          >
-            <b>Variables</b>
-            <pre style={{ margin: 0, marginTop: 10, whiteSpace: "pre-wrap" }}>
-              {JSON.stringify(vars, null, 2)}
-            </pre>
-          </div>
-
-          <div
-            style={{
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 14,
-              padding: 12,
-              background: "rgba(255,255,255,0.03)",
-            }}
-          >
-            <b>Console</b>
-            <pre style={{ margin: 0, marginTop: 10, whiteSpace: "pre-wrap" }}>
-              {consoleLines.join("\n")}
-            </pre>
-          </div>
+        <div style={{ display: "grid", gap: 12 }}>
+          <VariablesPanel vars={vars} />
+          <ConsolePanel lines={consoleLines} />
+          <StackPanel stack={current?.stack ?? []} activeLine={current?.currentLine} />
+          <StructuresPanel state={current} />
         </div>
       </div>
     </div>
