@@ -64,12 +64,9 @@ export default function App() {
     );
   }, [current]);
 
-  const consoleLines = useMemo(() => {
-    return current?.console ?? [];
-  }, [current]);
+  const consoleLines = useMemo(() => current?.console ?? [], [current]);
 
   const label = steps[idx]?.label ?? "";
-
   const canStep = idx < steps.length - 1;
 
   const onRun = () => {
@@ -79,9 +76,7 @@ export default function App() {
     setError(res.error);
   };
 
-  const onStep = () => {
-    setIdx((i) => Math.min(steps.length - 1, i + 1));
-  };
+  const onStep = () => setIdx((i) => Math.min(steps.length - 1, i + 1));
 
   const onReset = () => {
     setIdx(0);
@@ -90,38 +85,40 @@ export default function App() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", padding: 18, maxWidth: 1250, margin: "0 auto" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0 }}>Code Trace</h2>
-          <div style={{ opacity: 0.75, marginTop: 6 }}>
+    <div className="appRoot">
+      <div className="topBar">
+        <div className="topLeft">
+          <h2 className="topTitle">Code Trace</h2>
+          <div className="topDesc">
             Run ואז Step כדי לראות משתנים, קונסול, מחסנית, ותצוגה ויזואלית של מבני נתונים
           </div>
         </div>
 
-        <div style={{ opacity: 0.85, textAlign: "right" }}>
-          <div>
-            <b>Step:</b>{" "}
-            {steps.length ? `${idx} / ${steps.length - 1}` : "—"}{" "}
-            {current ? <span style={{ opacity: 0.75 }}>| line {current.currentLine}</span> : null}
+        <div className="topRight">
+          <div className="topMeta">
+            <b>Step:</b> {steps.length ? `${idx} / ${steps.length - 1}` : "—"}{" "}
+            {current ? <span className="topLine">| line {current.currentLine}</span> : null}
           </div>
-          <div style={{ marginTop: 6, opacity: 0.75 }}>{label}</div>
-          {error ? <div style={{ marginTop: 6, color: "salmon", fontWeight: 800 }}>Error: {error}</div> : null}
+          <div className="topLabel">{label}</div>
+          {error ? <div className="topError">Error: {error}</div> : null}
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: 14, marginTop: 14 }}>
-        <div style={{ display: "grid", gap: 12 }}>
+      <div className="layoutTop">
+        <div className="leftCol">
           <CodeEditor value={code} onChange={setCode} activeLine={current?.currentLine} />
           <Controls canStep={canStep} isRunning={!!steps.length} onRun={onRun} onStep={onStep} onReset={onReset} />
         </div>
 
-        <div style={{ display: "grid", gap: 12 }}>
+        <div className="rightCol">
           <VariablesPanel vars={vars} />
           <ConsolePanel lines={consoleLines} />
           <StackPanel stack={current?.stack ?? []} activeLine={current?.currentLine} />
-          <StructuresPanel state={current} />
         </div>
+      </div>
+
+      <div className="layoutBottom">
+        <StructuresPanel state={current} />
       </div>
     </div>
   );

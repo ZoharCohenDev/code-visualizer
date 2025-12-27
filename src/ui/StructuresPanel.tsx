@@ -1,4 +1,3 @@
-import Panel from "./Panel";
 import type { ExecutionState, Value } from "../engine/types";
 
 function isRef(v: Value): v is { $ref: string } {
@@ -14,187 +13,135 @@ function fmtValue(state: ExecutionState, v: Value): string {
     if (o.kind === "Queue") return `Queue(${o.items.map((x) => fmtValue(state, x)).join(", ")})`;
     if (o.kind === "BinaryTree") return `BinaryTree(${o.root ? fmtValue(state, o.root) : "empty"})`;
     if (o.kind === "TreeNode") return `Node(${fmtValue(state, o.value)})`;
-    if (o.kind === "Function") return `function ${o.name}()`;
-    return `Object(${Object.keys((o as any).props ?? {}).length})`;
+    return o.kind;
   }
   return String(v);
 }
 
-function StackLike({ state, id, items }: { state: ExecutionState; id: string; items: Value[] }) {
-  const top = items.length ? items[items.length - 1] : undefined;
+type TreeVizNode = {
+  id: string;
+  value: Value;
+  depth: number;
+  xIndex: number;
+  left: Value | null;
+  right: Value | null;
+};
 
-  return (
-    <div className="dsCard">
-      <div className="dsRow">
-        <div className="dsName">{id}</div>
-        <div className="dsMeta">
-          size {items.length}
-          {items.length ? ` | top ${fmtValue(state, top as Value)}` : ""}
-        </div>
-      </div>
+function buildTreeLayout(state: ExecutionState, root: Value | null) {
+  if (!root || !isRef(root)) return { nodes: [] as TreeVizNode[], edges: [] as { from: string; to: string }[] };
 
-      <div className="list">
-        {items.length ? (
-          items.map((v, i) => (
-            <div className="row" key={`${id}-stack-${i}`}>
-              <div className="rowMain">
-                <div className="rowTitle">{fmtValue(state, v)}</div>
-                <div className="rowSub">{i === items.length - 1 ? "top item" : "item"}</div>
-              </div>
-              <div className={`chip ${i === items.length - 1 ? "active" : ""}`}>
-                {i === items.length - 1 ? "top" : "in stack"}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="empty">Empty</div>
-        )}
-      </div>
-    </div>
-  );
+  const nodesById = new Map<string, TreeVizNode>();
+  const edges: { from: string; to: string }[] = [];
+  let xCounter = 0;
+
+  const walk = (ref: Value | null, depth: number) => {
+    if (!ref || !isRef(ref)) return;
+    const obj = state.heap[ref.$ref];
+    if (!obj || obj.kind !== "TreeNode") return;
+
+    const left = (obj.left ?? null) as Value | null;
+    const right = (obj.right ?? null) as Value | null;
+
+    walk(left, depth + 1);
+
+    const id = ref.$ref;
+    const node: TreeVizNode = {
+      id,
+      value: obj.value,
+      depth,
+      xIndex: xCounter++,
+      left,
+      right,
+    };
+    nodesById.set(id, node);
+
+    if (left && isRef(left)) edges.push({ from: id, to: left.$ref });
+    if (right && isRef(right)) edges.push({ from: id, to: right.$ref });
+
+    walk(right, depth + 1);
+  };
+
+  walk(root, 0);
+
+  return { nodes: Array.from(nodesById.values()), edges };
 }
 
-function QueueLike({ state, id, items }: { state: ExecutionState; id: string; items: Value[] }) {
-  const head = items.length ? items[0] : undefined;
-  const tail = items.length ? items[items.length - 1] : undefined;
+function BinaryTreeViz({ state, root }: { state: ExecutionState; root: Value | null }) {
+  const { nodes, edges } = buildTreeLayout(state, root);
 
-  return (
-    <div className="dsCard queue">
-      <div className="dsRow">
-        <div className="dsName">{id}</div>
-        <div className="dsMeta">
-          size {items.length}
-          {items.length ? ` | head ${fmtValue(state, head as Value)} | tail ${fmtValue(state, tail as Value)}` : ""}
-        </div>
-      </div>
+  if (!nodes.length) return <div className="mutedTiny">Empty</div>;
 
-      <div className="dsItems">
-        {items.length ? (
-          items.map((v, i) => (
-            <div className="dsItem" key={`${id}-queue-${i}`}>
-              {fmtValue(state, v)}
-            </div>
-          ))
-        ) : (
-          <div className="empty">Empty</div>
-        )}
-      </div>
-    </div>
-  );
-}
+  const NODE_R = 24;
+  const X_GAP = 76;
+  const Y_GAP = 92;
+  const PAD_X = 34;
+  const PAD_Y = 34;
 
-type TreeNodeLayout = { ref: string; x: number; y: number; label: string; active: boolean };
-type TreeEdgeLayout = { x1: number; y1: number; x2: number; y2: number };
+  const maxX = Math.max(...nodes.map((n) => n.xIndex));
+  const maxDepth = Math.max(...nodes.map((n) => n.depth));
 
-function buildTreeLayout(state: ExecutionState, root: Value | null, maxDepth = 5) {
-  const W = 900;
-  const levelH = 78;
+  const width = PAD_X * 2 + (maxX + 1) * X_GAP;
+  const height = PAD_Y * 2 + (maxDepth + 1) * Y_GAP;
 
-  if (!root || !isRef(root)) {
-    return { W, H: 260, nodes: [] as TreeNodeLayout[], edges: [] as TreeEdgeLayout[] };
-  }
-
-  const slots = new Map<string, Value>();
-  const q: { v: Value; depth: number; slot: number }[] = [{ v: root, depth: 0, slot: 0 }];
-  let maxUsedDepth = 0;
-
-  while (q.length) {
-    const cur = q.shift()!;
-    if (cur.depth > maxDepth) continue;
-    if (!isRef(cur.v)) continue;
-
-    const key = `${cur.depth}:${cur.slot}`;
-    slots.set(key, cur.v);
-    maxUsedDepth = Math.max(maxUsedDepth, cur.depth);
-
-    const obj = state.heap[cur.v.$ref];
-    if (!obj || obj.kind !== "TreeNode") continue;
-
-    const left = obj.left ?? null;
-    const right = obj.right ?? null;
-
-    if (left && isRef(left)) q.push({ v: left, depth: cur.depth + 1, slot: cur.slot * 2 });
-    if (right && isRef(right)) q.push({ v: right, depth: cur.depth + 1, slot: cur.slot * 2 + 1 });
-  }
-
-  const nodes: TreeNodeLayout[] = [];
   const pos = new Map<string, { x: number; y: number }>();
-  const edges: TreeEdgeLayout[] = [];
-
-  const H = Math.max(260, (maxUsedDepth + 2) * levelH);
-
-  for (let depth = 0; depth <= maxUsedDepth; depth++) {
-    const slotsCount = 2 ** depth;
-    for (let slot = 0; slot < slotsCount; slot++) {
-      const key = `${depth}:${slot}`;
-      const v = slots.get(key);
-      if (!v || !isRef(v)) continue;
-
-      const x = ((slot + 0.5) / slotsCount) * W;
-      const y = 44 + depth * levelH;
-
-      const obj = state.heap[v.$ref];
-      let label = v.$ref;
-      if (obj && obj.kind === "TreeNode") label = fmtValue(state, obj.value);
-
-      nodes.push({ ref: v.$ref, x, y, label, active: depth === 0 });
-      pos.set(v.$ref, { x, y });
-    }
-  }
-
   for (const n of nodes) {
-    const obj = state.heap[n.ref];
-    if (!obj || obj.kind !== "TreeNode") continue;
-
-    const from = pos.get(n.ref);
-    if (!from) continue;
-
-    const left = obj.left ?? null;
-    const right = obj.right ?? null;
-
-    if (left && isRef(left)) {
-      const to = pos.get(left.$ref);
-      if (to) edges.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y });
-    }
-    if (right && isRef(right)) {
-      const to = pos.get(right.$ref);
-      if (to) edges.push({ x1: from.x, y1: from.y, x2: to.x, y2: to.y });
-    }
+    pos.set(n.id, {
+      x: PAD_X + n.xIndex * X_GAP,
+      y: PAD_Y + n.depth * Y_GAP,
+    });
   }
-
-  return { W, H, nodes, edges };
-}
-
-function TreeLike({ state, id, root }: { state: ExecutionState; id: string; root: Value | null }) {
-  const layout = buildTreeLayout(state, root, 5);
 
   return (
-    <div className="dsCard tree">
-      <div className="dsRow">
-        <div className="dsName">{id}</div>
-        <div className="dsMeta">{root ? "root set" : "empty"}</div>
-      </div>
+    <div className="treeVizWrap">
+      <svg className="treeSvg" width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        <defs>
+          <linearGradient id="nodeStroke" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="rgba(124,92,255,0.95)" />
+            <stop offset="100%" stopColor="rgba(45,226,230,0.9)" />
+          </linearGradient>
 
-      <div className="treeCanvas">
-        {layout.nodes.length === 0 ? (
-          <div className="empty">Empty</div>
-        ) : (
-          <svg className="treeSvg" viewBox={`0 0 ${layout.W} ${layout.H}`} preserveAspectRatio="none">
-            {layout.edges.map((e, i) => (
-              <line key={`e-${i}`} className="treeEdge" x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} />
-            ))}
+          <linearGradient id="nodeFill" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="rgba(124,92,255,0.20)" />
+            <stop offset="100%" stopColor="rgba(45,226,230,0.12)" />
+          </linearGradient>
 
-            {layout.nodes.map((n) => (
-              <g key={n.ref}>
-                <circle className={`treeNodeCircle ${n.active ? "active" : ""}`} cx={n.x} cy={n.y} r={24} />
-                <text className="treeNodeText" x={n.x} y={n.y}>
-                  {n.label}
-                </text>
-              </g>
-            ))}
-          </svg>
-        )}
-      </div>
+          <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {edges.map((e, i) => {
+          const a = pos.get(e.from);
+          const b = pos.get(e.to);
+          if (!a || !b) return null;
+          return (
+            <line
+              key={`${e.from}-${e.to}-${i}`}
+              x1={a.x}
+              y1={a.y + NODE_R}
+              x2={b.x}
+              y2={b.y - NODE_R}
+              className="treeEdge"
+            />
+          );
+        })}
+
+        {nodes.map((n) => {
+          const p = pos.get(n.id)!;
+          return (
+            <g key={n.id}>
+              <circle cx={p.x} cy={p.y} r={NODE_R} className="treeNodeCircle" />
+              <text x={p.x} y={p.y + 1} className="treeNodeText" textAnchor="middle" dominantBaseline="middle">
+                {fmtValue(state, n.value)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }
@@ -202,38 +149,110 @@ function TreeLike({ state, id, root }: { state: ExecutionState; id: string; root
 export default function StructuresPanel({ state }: { state: ExecutionState | null }) {
   if (!state) return null;
 
-  const stacks = Object.entries(state.heap).filter(([, o]) => o.kind === "Stack") as [string, any][];
-  const queues = Object.entries(state.heap).filter(([, o]) => o.kind === "Queue") as [string, any][];
-  const trees = Object.entries(state.heap).filter(([, o]) => o.kind === "BinaryTree") as [string, any][];
+  const stacks = Object.entries(state.heap).filter(([, o]) => o.kind === "Stack");
+  const queues = Object.entries(state.heap).filter(([, o]) => o.kind === "Queue");
+  const trees = Object.entries(state.heap).filter(([, o]) => o.kind === "BinaryTree");
 
-  return (
-    <Panel title="Data Structures" subtitle="visual trace">
-      <div className="panelBlock">
-        <div className="panelSubTitle">Stack</div>
-        {stacks.length ? (
-          stacks.map(([id, o]) => <StackLike key={id} state={state} id={id} items={o.items ?? []} />)
-        ) : (
-          <div className="mutedTiny">No stacks yet</div>
-        )}
+    return (
+    <div className="panel">
+      <div className="panelHead">
+        <div className="panelTitle">Data Structures</div>
+        <div className="panelSub">visual trace</div>
       </div>
 
-      <div className="panelBlock">
-        <div className="panelSubTitle">Queue</div>
-        {queues.length ? (
-          queues.map(([id, o]) => <QueueLike key={id} state={state} id={id} items={o.items ?? []} />)
-        ) : (
-          <div className="mutedTiny">No queues yet</div>
-        )}
-      </div>
+      <div className="panelBody">
+        <div className="dsGrid">
+          <div className="dsCol">
+            <div className="dsColHead">Stacks</div>
+            {stacks.length === 0 ? <div className="mutedTiny">No stacks yet</div> : null}
+            {stacks.map(([id, o]) => {
+              const items = (o as any).items as Value[];
+              const top = items.length ? items[items.length - 1] : null;
 
-      <div className="panelBlock">
-        <div className="panelSubTitle">Binary Tree</div>
-        {trees.length ? (
-          trees.map(([id, o]) => <TreeLike key={id} state={state} id={id} root={(o as any).root ?? null} />)
-        ) : (
-          <div className="mutedTiny">No trees yet</div>
-        )}
+              return (
+                <div key={id} className="dsCard stackCard">
+                  <div className="dsRow">
+                    <div className="dsName">{id}</div>
+                    <div className="dsMeta">size {items.length}{top !== null ? ` | top ${fmtValue(state, top)}` : ""}</div>
+                  </div>
+
+                  <div className="stackViz">
+                    <div className="stackTube" />
+                    <div className="stackBase" />
+                    <div className="stackItems">
+                      {items.length ? (
+                        items.slice().reverse().map((v, i) => (
+                          <div key={i} className={`stackBullet ${i === 0 ? "top" : ""}`}>
+                            {fmtValue(state, v)}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="mutedTiny">Empty</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="dsCol">
+            <div className="dsColHead">Queues</div>
+            {queues.length === 0 ? <div className="mutedTiny">No queues yet</div> : null}
+            {queues.map(([id, o]) => {
+              const items = (o as any).items as Value[];
+              const front = items.length ? items[0] : null;
+              const back = items.length ? items[items.length - 1] : null;
+
+              return (
+                <div key={id} className="dsCard queueCard">
+                  <div className="dsRow">
+                    <div className="dsName">{id}</div>
+                    <div className="dsMeta">
+                      size {items.length}
+                      {front !== null ? ` | front ${fmtValue(state, front)}` : ""}
+                      {back !== null ? ` | back ${fmtValue(state, back)}` : ""}
+                    </div>
+                  </div>
+
+                  <div className="queueViz">
+                    <div className="queueTag front">FRONT</div>
+                    <div className="queueBelt">
+                      {items.length ? (
+                        items.map((v, i) => (
+                          <div key={i} className="queueBox">
+                            {fmtValue(state, v)}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="mutedTiny">Empty</div>
+                      )}
+                    </div>
+                    <div className="queueTag back">BACK</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="dsCol">
+            <div className="dsColHead">Binary Trees</div>
+            {trees.length === 0 ? <div className="mutedTiny">No trees yet</div> : null}
+            {trees.map(([id, o]) => {
+              const root = (o as any).root ?? null;
+              return (
+                <div key={id} className="dsCard treeCard">
+                  <div className="dsRow">
+                    <div className="dsName">{id}</div>
+                    <div className="dsMeta">{root ? "root set" : "empty"}</div>
+                  </div>
+                  <BinaryTreeViz state={state} root={root} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
-    </Panel>
+    </div>
   );
 }
