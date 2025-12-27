@@ -1,18 +1,18 @@
 import type { AnyNode } from "../engine/parse";
 import type { ExecutionState, Value } from "../engine/types";
 import { alloc, deref, globals, isRef, valueToString } from "./state";
-
+//מחזיר את הערך של מזהה נתון במצב ההרצה
 function getId(state: ExecutionState, name: string): Value {
   const frame = globals(state);
   if (!(name in frame.locals)) throw new Error(`Undefined variable: ${name}`);
   return frame.locals[name];
 }
-
+//מגדיר את הערך של מזהה נתון במצב ההרצה
 function setId(state: ExecutionState, name: string, v: Value) {
   const frame = globals(state);
   frame.locals[name] = v;
 }
-
+//ממיר ערך למספר
 function asNumber(v: Value): number {
   if (typeof v === "number") return v;
   if (typeof v === "boolean") return v ? 1 : 0;
@@ -20,16 +20,16 @@ function asNumber(v: Value): number {
   if (v === null || v === undefined) return 0;
   throw new Error("Not a number");
 }
-
+//השוואה רופפת בין שני ערכים
 function looseEq(a: Value, b: Value): boolean {
   // eslint-disable-next-line eqeqeq
   return (a as any) == (b as any);
 }
-
+//השוואה מחמירה בין שני ערכים
 function strictEq(a: Value, b: Value): boolean {
   return (a as any) === (b as any);
 }
-
+//מקבלת ערך שמצביע לאובייקט בהיפ , ומחזירה את הערך של שדה ממנו לפי הkind והprop שביקשת
 function getMember(state: ExecutionState, objV: Value, prop: string, computedKey?: Value): Value {
   if (!isRef(objV)) return undefined;
 
@@ -75,7 +75,7 @@ function getMember(state: ExecutionState, objV: Value, prop: string, computedKey
 
   return undefined;
 }
-
+//מבצעת קריאה למתודה של אובייקט בהיפ לפי הkind והprop שביקשת עם הפרמטרים args ומשנה את ההיפ בהתאם
 function callMember(state: ExecutionState, objV: Value, prop: string, args: Value[]): Value {
   if (!isRef(objV)) throw new Error("Method call on non-object");
 
@@ -185,7 +185,7 @@ function callMember(state: ExecutionState, objV: Value, prop: string, args: Valu
 
   throw new Error(`Unsupported method call: ${prop}`);
 }
-
+//מפרש ומחשב ביטוי נתון במצב ההרצה
 export function evalExpr(node: AnyNode, state: ExecutionState): Value {
   if (!node) return undefined;
 
@@ -301,7 +301,7 @@ export function evalExpr(node: AnyNode, state: ExecutionState): Value {
 
   throw new Error(`Unsupported expression: ${node.type}`);
 }
-
+//מבצע עדכון על ביטוי נתון במצב ההרצה: מגדיל או מקטין את הערך של מזהה ב-1 בהתאם לאופרטור ומחזיר את הערך המתאים לפי אם העדכון הוא פריפיקס או פוסטפיקס
 export function execUpdateExpr(node: AnyNode, state: ExecutionState): Value {
   if (node.type !== "UpdateExpression") throw new Error("Not update expr");
   if (node.argument?.type !== "Identifier") throw new Error("Only identifier update is supported");
@@ -312,7 +312,7 @@ export function execUpdateExpr(node: AnyNode, state: ExecutionState): Value {
   setId(state, name, next);
   return node.prefix ? next : curNum;
 }
-
+// מבצע עדכון על ביטוי שניתן להקצות לו ערך במצב ההרצה (השמה) עם הערך הנתון
 export function setAssignable(node: AnyNode, state: ExecutionState, value: Value) {
   if (node.type === "Identifier") {
     setId(state, node.name, value);
