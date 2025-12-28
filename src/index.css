@@ -1221,9 +1221,9 @@ body{
   margin: 0;
   min-height: 240px;
   max-height: 320px;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   background: linear-gradient(180deg, rgba(18,22,38,0.88), rgba(14,16,28,0.88));
   border: 1px solid rgba(255,255,255,0.10);
   box-shadow: 0 18px 55px rgba(0,0,0,0.35);
@@ -1491,7 +1491,6 @@ body{
   }
 }
 
-/* שלא יתפוצץ טקסט החוצה */
 .dsPanel .dsCard,
 .dsPanel .dsRow,
 .dsPanel .dsMeta,
@@ -1505,7 +1504,6 @@ body{
   white-space: nowrap;
 }
 
-/* Stack/Queue: אם הטקסט ארוך שיחתך יפה בלי לשבור UI */
 .dsPanel .stackBullet,
 .dsPanel .queueBox{
   overflow: hidden;
@@ -1513,7 +1511,6 @@ body{
   white-space: nowrap;
 }
 
-/* ========= ARRAY VIZ ========= */
 .dsPanel .arrayViz{
   margin-top: 12px;
   border: 2px solid rgba(255,255,255,0.10);
