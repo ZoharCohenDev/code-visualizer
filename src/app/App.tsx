@@ -98,7 +98,7 @@ console.log("tree inOrder:", inorder);
 console.log("inOrder length:", inorder.length);
 console.log("inOrder[2]:", inorder[2]);
 `;
-
+//recursion , classes + inheritance , higher order functions , closures , linked lists , hash maps , sets , graphs 
 function isRef(v: Value): v is { $ref: string } {
   return !!v && typeof v === "object" && "$ref" in v;
 }

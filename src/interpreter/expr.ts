@@ -4,6 +4,8 @@ import { alloc, deref, globals, isRef, pushStep, valueToString } from "./state";
 import { nodeLine } from "./ast";
 import { execFunctionBody } from "./stmt";
 
+const MAX_CALL_DEPTH = 200;
+
 function findFrame(state: ExecutionState, name: string) {
   for (let i = state.stack.length - 1; i >= 0; i--) {
     const f = state.stack[i];
@@ -211,6 +213,9 @@ function callUserFunction(
   const newFrame = { name, locals: {} as Record<string, Value> };
   for (let i = 0; i < fnObj.params.length; i++) {
     newFrame.locals[fnObj.params[i]] = args[i];
+  }
+  if (state.stack.length >= MAX_CALL_DEPTH) {
+    throw new Error(`Stopped: max call depth (${MAX_CALL_DEPTH}) exceeded`);
   }
 
   state.stack.push(newFrame);

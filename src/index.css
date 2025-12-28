@@ -1140,3 +1140,505 @@ body{
   display: grid;
   gap: 10px;
 }
+
+
+.appRoot{
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.layoutTop{
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+}
+
+.layoutBottom{
+  flex: 0 0 clamp(260px, 34vh, 420px);
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.layoutBottom .panel{
+  height: 100%;
+  min-height: 0;
+}
+
+.layoutBottom .panelBody{
+  min-height: 0;
+  overflow: auto;
+}
+
+.dsPanel .panelTitle{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dsPanel .panelSub{
+  opacity: 0.85;
+}
+
+.dsSections{
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dsSectionHead{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.dsSectionTitle{
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.dsSectionMeta{
+  font-size: 12px;
+  opacity: 0.75;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.dsGrid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.dsPanel .dsCard{
+  margin: 0;
+  min-height: 240px;
+  max-height: 320px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(18,22,38,0.88), rgba(14,16,28,0.88));
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 18px 55px rgba(0,0,0,0.35);
+}
+
+.dsPanel .dsCard:hover{
+  transform: translateY(-1px);
+  border-color: rgba(120,180,255,0.35);
+  box-shadow: 0 22px 70px rgba(0,0,0,0.42), 0 0 0 1px rgba(120,180,255,0.18) inset;
+}
+
+.dsHeader{
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 12px;
+}
+
+.dsName{
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.dsMeta{
+  font-size: 12px;
+  opacity: 0.75;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  white-space: nowrap;
+}
+
+.dsRef{
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.20);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: rgba(220,235,255,0.92);
+  white-space: nowrap;
+}
+
+.dsViz{
+  flex: 1;
+  min-height: 0;
+  margin: 0 14px 14px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.16);
+  overflow: auto;
+}
+
+.dsEmpty{
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px dashed rgba(255,255,255,0.16);
+  background: rgba(0,0,0,0.10);
+  opacity: 0.9;
+}
+
+.dsEmptyMini{
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px dashed rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.10);
+  opacity: 0.85;
+  text-align: center;
+}
+
+.muted{
+  opacity: 0.65;
+}
+
+.stackLegend,
+.queueLegend{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  opacity: 0.75;
+  padding: 0 2px 10px;
+}
+
+.queueSpacer{
+  flex: 1;
+}
+
+.stackBody{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stackBullet{
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueBelt{
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.queueBox{
+  min-width: 118px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queueMore{
+  min-width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1px dashed rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.10);
+  opacity: 0.85;
+}
+
+.treeVizWrap{
+  height: 100%;
+  min-height: 220px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.treeSvg{
+  width: 100%;
+  height: 100%;
+}
+
+.treeEdge{
+  stroke: rgba(185,215,255,0.45);
+  stroke-width: 2;
+}
+
+.treeNodeCircle{
+  fill: rgba(70,120,255,0.25);
+  stroke: rgba(200,230,255,0.55);
+  stroke-width: 2.2;
+}
+
+.treeNodeText{
+  fill: rgba(255,255,255,0.92);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1px;
+}
+
+.arrayBelt{
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.arrayCell{
+  min-width: 132px;
+  max-width: 170px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 6px;
+  padding: 10px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+}
+
+.arrayIdx{
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.arrayVal{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arrayMore{
+  min-width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1px dashed rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.10);
+  opacity: 0.85;
+}
+
+.objectGrid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.objectPair{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.06);
+  min-width: 0;
+}
+
+.objectKey{
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0.92;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.10);
+  white-space: nowrap;
+}
+
+.objectVal{
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.objectMore{
+  margin-top: 12px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+
+/* ========= DS PANEL: 2 per row ========= */
+.dsPanel .dsGrid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 900px){
+  .dsPanel .dsGrid{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* שלא יתפוצץ טקסט החוצה */
+.dsPanel .dsCard,
+.dsPanel .dsRow,
+.dsPanel .dsMeta,
+.dsPanel .dsName{
+  min-width: 0;
+}
+
+.dsPanel .dsMeta{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Stack/Queue: אם הטקסט ארוך שיחתך יפה בלי לשבור UI */
+.dsPanel .stackBullet,
+.dsPanel .queueBox{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========= ARRAY VIZ ========= */
+.dsPanel .arrayViz{
+  margin-top: 12px;
+  border: 2px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.10);
+  border-radius: 16px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.dsPanel .arrayBelt{
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.dsPanel .arrayCell{
+  min-width: 120px;
+  max-width: 170px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.12);
+  background: linear-gradient(135deg, rgba(124,92,255,0.14), rgba(45,226,230,0.08));
+  padding: 10px 10px;
+  display: grid;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.dsPanel .arrayIdx{
+  font-size: 11px;
+  opacity: 0.75;
+  font-weight: 800;
+}
+
+.dsPanel .arrayVal{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 900;
+  opacity: 0.92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsPanel .arrayMore{
+  min-width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 2px dashed rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.10);
+  opacity: 0.85;
+  flex: 0 0 auto;
+}
+
+/* ========= OBJECT VIZ ========= */
+.dsPanel .objectViz{
+  margin-top: 12px;
+  border: 2px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.10);
+  border-radius: 16px;
+  padding: 12px;
+  overflow: auto;
+  max-height: 240px;
+}
+
+.dsPanel .objectGrid{
+  display: grid;
+  gap: 10px;
+}
+
+.dsPanel .objectRow{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+  min-width: 0;
+}
+
+.dsPanel .objectKey{
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.10);
+  white-space: nowrap;
+}
+
+.dsPanel .objectVal{
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 800;
+  opacity: 0.92;
+}
+
+.dsPanel .objectMore{
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* מאפשר לפאנל התחתון לגלול בתוך ה-body שלו */
+.layoutBottom .panel{
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+}
+
+.layoutBottom .panelBody{
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ביטחון נוסף עבור DS */
+.dsPanel{
+  height: 100%;
+  min-height: 0;
+}
