@@ -12,39 +12,12 @@ import CodeArsenalModal from "../ui/CodeArsenalModal";
 import { runCodeToSteps } from "../interpreter/index";
 import type { ExecutionState, Step, Value } from "../engine/types";
 
-const DEFAULT_CODE = `class Animal {
-  constructor(name) {
-    this.name = name;
-    this.kind = "animal";
-  }
-  speak() {
-    console.log("Animal speak:", this.name);
-  }
+const DEFAULT_CODE = `function fib(n) {
+  if (n <= 1) return n;
+  return fib(n - 1) + fib(n - 2);
 }
 
-class Dog extends Animal {
-  constructor(name, breed) {
-    super(name);
-    this.breed = breed;
-  }
-  speak() {
-    super.speak();
-    console.log("Dog speak:", this.name, this.breed);
-  }
-}
-
-function fact(n) {
-  if (n <= 1) return 1;
-  return n * fact(n - 1);
-}
-
-let d = new Dog("Bobi", "Husky");
-d.speak();
-
-let x = 2;
-x += 3;
-
-console.log("fact(5):", fact(5));
+console.log("fib(6):", fib(6));
 `;
 
 function isRef(v: Value): v is { $ref: string } {
