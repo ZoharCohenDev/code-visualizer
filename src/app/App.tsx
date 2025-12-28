@@ -6,7 +6,7 @@ import Controls from "../ui/Controls";
 import VariablesPanel from "../ui/VariablesPanel";
 import ConsolePanel from "../ui/ConsolePanel";
 import StackPanel from "../ui/StackPanel";
-import StructuresPanel from "../ui/StructuresPanel";
+import StructuresPanel, { type DSFocus } from "../ui/StructuresPanel";
 import CodeArsenalModal from "../ui/CodeArsenalModal";
 
 import { runCodeToSteps } from "../interpreter/index";
@@ -82,6 +82,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [arsenalOpen, setArsenalOpen] = useState(false);
 
+  const [dsFocus, setDsFocus] = useState<DSFocus | null>(null);
+
   const current = steps[idx]?.state ?? null;
 
   const vars = useMemo(() => {
@@ -101,6 +103,7 @@ export default function App() {
     setSteps(res.steps);
     setIdx(0);
     setError(res.error ?? null);
+    setDsFocus(null);
   };
 
   const onStep = () => setIdx((i) => Math.min(steps.length - 1, i + 1));
@@ -109,7 +112,12 @@ export default function App() {
     setIdx(0);
     setSteps([]);
     setError(null);
+    setDsFocus(null);
   };
+
+  const closeDsModal = () => setDsFocus(null);
+
+  const dsModalTitle = dsFocus ? dsFocus.kind : "Data Structure";
 
   return (
     <div className="appRoot">
@@ -157,8 +165,33 @@ export default function App() {
       </div>
 
       <div className="layoutBottom">
-        <StructuresPanel state={current} />
+        <StructuresPanel
+          state={current}
+          onOpen={(focus) => setDsFocus(focus)}
+        />
       </div>
+
+      {dsFocus ? (
+        <div
+          className="dsModalOverlay"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeDsModal();
+          }}
+        >
+          <div className="dsModal dsModalBig" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="dsModalHead">
+              <div className="dsModalTitle">{dsModalTitle}</div>
+              <button className="dsModalClose" onClick={closeDsModal} aria-label="Close">
+                ×
+              </button>
+            </div>
+
+            <div className="dsModalBody dsModalBodyPadless">
+              <StructuresPanel state={current} focus={dsFocus} inModal />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <CodeArsenalModal
         open={arsenalOpen}
@@ -168,6 +201,7 @@ export default function App() {
           setSteps([]);
           setIdx(0);
           setError(null);
+          setDsFocus(null);
         }}
       />
     </div>
