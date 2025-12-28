@@ -1642,3 +1642,142 @@ body{
   height: 100%;
   min-height: 0;
 }
+
+.arsenalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+  padding: 18px;
+}
+
+.arsenalModal{
+  width: min(980px, 96vw);
+  max-height: min(760px, 86vh);
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: linear-gradient(180deg, rgba(18,22,38,0.98), rgba(14,16,28,0.98));
+  box-shadow: 0 30px 90px rgba(0,0,0,0.55);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.arsenalHead{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.arsenalTitle{
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.arsenalSearchRow{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.arsenalSearch{
+  flex: 1;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.92);
+  padding: 0 12px;
+  outline: none;
+}
+
+.arsenalSearch::placeholder{
+  color: rgba(255,255,255,0.55);
+}
+
+.arsenalCount{
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0.75;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.arsenalGrid{
+  padding: 14px;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 900px){
+  .arsenalGrid{
+    grid-template-columns: 1fr;
+  }
+}
+
+.arsenalItem{
+  text-align: left;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  padding: 12px 12px 10px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.92);
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.arsenalItem:hover{
+  transform: translateY(-1px);
+  border-color: rgba(120,180,255,0.35);
+  background: rgba(255,255,255,0.07);
+}
+
+.arsenalItemTitle{
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.arsenalTags{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.arsenalTag{
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0.85;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(124,92,255,0.16);
+  border: 1px solid rgba(124,92,255,0.28);
+}
+
+.arsenalPreview{
+  margin: 0;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  line-height: 18px;
+  max-height: 160px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  opacity: 0.92;
+}

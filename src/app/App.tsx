@@ -1,4 +1,3 @@
-// App.tsx
 import { useMemo, useState } from "react";
 import "../index.css";
 
@@ -8,6 +7,7 @@ import VariablesPanel from "../ui/VariablesPanel";
 import ConsolePanel from "../ui/ConsolePanel";
 import StackPanel from "../ui/StackPanel";
 import StructuresPanel from "../ui/StructuresPanel";
+import CodeArsenalModal from "../ui/CodeArsenalModal";
 
 import { runCodeToSteps } from "../interpreter/index";
 import type { ExecutionState, Step, Value } from "../engine/types";
@@ -80,18 +80,20 @@ export default function App() {
   const [steps, setSteps] = useState<Step[]>([]);
   const [idx, setIdx] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [arsenalOpen, setArsenalOpen] = useState(false);
 
   const current = steps[idx]?.state ?? null;
 
   const vars = useMemo(() => {
     if (!current) return {};
     const activeFrame = current.stack[current.stack.length - 1];
-    return Object.fromEntries(Object.entries(activeFrame.locals).map(([k, v]) => [k, fmtValue(current, v)]));
+    return Object.fromEntries(
+      Object.entries(activeFrame.locals).map(([k, v]) => [k, fmtValue(current, v)])
+    );
   }, [current]);
 
   const consoleLines = useMemo(() => current?.console ?? [], [current]);
 
-  const label = steps[idx]?.label ?? "";
   const canStep = idx < steps.length - 1;
 
   const onRun = () => {
@@ -114,23 +116,37 @@ export default function App() {
       <div className="topBar">
         <div className="topLeft">
           <h2 className="topTitle">Code Trace</h2>
-          <div className="topDesc">Run ואז Step כדי לראות משתנים, קונסול, מחסנית, ותצוגה ויזואלית</div>
+          <div className="topDesc">
+            Run ואז Step כדי לראות משתנים, קונסול, מחסנית ותצוגה ויזואלית
+          </div>
         </div>
 
         <div className="topRight">
           <div className="topMeta">
-            <b>Step:</b> {steps.length ? `${idx} / ${steps.length - 1}` : "—"}{" "}
-            {current ? <span className="topLine">| line {current.currentLine}</span> : null}
+            <b>Step:</b>{" "}
+            {steps.length ? `${idx} / ${steps.length - 1}` : "—"}
+            {current ? <span className="topLine"> | line {current.currentLine}</span> : null}
           </div>
-          <div className="topLabel">{label}</div>
           {error ? <div className="topError">Error: {error}</div> : null}
         </div>
       </div>
 
       <div className="layoutTop">
         <div className="leftCol">
-          <CodeEditor value={code} onChange={setCode} activeLine={current?.currentLine} />
-          <Controls canStep={canStep} isRunning={!!steps.length} onRun={onRun} onStep={onStep} onReset={onReset} />
+          <CodeEditor
+            value={code}
+            onChange={setCode}
+            activeLine={current?.currentLine}
+          />
+
+          <Controls
+            canStep={canStep}
+            isRunning={!!steps.length}
+            onRun={onRun}
+            onStep={onStep}
+            onReset={onReset}
+            onOpenArsenal={() => setArsenalOpen(true)}
+          />
         </div>
 
         <div className="rightCol">
@@ -143,6 +159,17 @@ export default function App() {
       <div className="layoutBottom">
         <StructuresPanel state={current} />
       </div>
+
+      <CodeArsenalModal
+        open={arsenalOpen}
+        onClose={() => setArsenalOpen(false)}
+        onPick={(snippet) => {
+          setCode(snippet);
+          setSteps([]);
+          setIdx(0);
+          setError(null);
+        }}
+      />
     </div>
   );
 }

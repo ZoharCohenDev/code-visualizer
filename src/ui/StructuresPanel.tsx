@@ -1,4 +1,3 @@
-// ui/StructuresPanel.tsx
 import type { ExecutionState, Value } from "../engine/types";
 
 function isRef(v: Value): v is { $ref: string } {
@@ -252,6 +251,172 @@ function CallTraceViz({ state, id }: { state: ExecutionState; id: string }) {
   );
 }
 
+function StackViz({ state, items }: { state: ExecutionState; items: Value[] }) {
+  const shown = items.slice(-12);
+  const topIdx = shown.length - 1;
+
+  return (
+    <div className="dsViz">
+      <div className="stackViz">
+        <div className="stackTube" />
+        <div className="stackBase" />
+        <div className="stackItems">
+          {shown.map((v, i) => (
+            <div key={i} className={`stackBullet ${i === topIdx ? "top" : ""}`} title={fmtValue(state, v)}>
+              {cut(fmtValue(state, v), 20)}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QueueViz({ state, items }: { state: ExecutionState; items: Value[] }) {
+  const shown = items.slice(0, 10);
+  const more = items.length - shown.length;
+
+  return (
+    <div className="dsViz">
+      <div className="queueViz">
+        <div className="queueBelt">
+          <div className="queueTag front">FRONT</div>
+          {shown.map((v, i) => (
+            <div key={i} className="queueBox" title={fmtValue(state, v)}>
+              {cut(fmtValue(state, v), 20)}
+            </div>
+          ))}
+          {more > 0 ? <div className="queueMore">+{more}</div> : null}
+          <div className="queueSpacer" />
+          <div className="queueTag back">BACK</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ArrayViz({ state, items }: { state: ExecutionState; items: Value[] }) {
+  const shown = items.slice(0, 10);
+  const more = items.length - shown.length;
+
+  return (
+    <div className="dsViz arrayViz">
+      <div className="arrayBelt">
+        {shown.map((v, i) => (
+          <div key={i} className="arrayCell" title={fmtValue(state, v)}>
+            <div className="arrayIdx">[{i}]</div>
+            <div className="arrayVal">{cut(fmtValue(state, v), 20)}</div>
+          </div>
+        ))}
+        {more > 0 ? <div className="arrayMore">+{more}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+function buildTreeLayout(state: ExecutionState, root: Value | null) {
+  if (!root || !isRef(root)) return { nodes: [], edges: [] };
+
+  const nodes: { id: string; x: number; y: number; label: string }[] = [];
+  const edges: { from: string; to: string }[] = [];
+
+  let order = 0;
+
+  function inorder(nodeRef: Value | null, depth: number) {
+    if (!nodeRef || !isRef(nodeRef)) return;
+    const n: any = state.heap[nodeRef.$ref];
+    if (!n || n.kind !== "TreeNode") return;
+
+    inorder(n.left, depth + 1);
+
+    const id = nodeRef.$ref;
+    const x = order++;
+    const y = depth;
+    nodes.push({ id, x, y, label: cut(fmtValue(state, n.value), 10) });
+
+    if (n.left && isRef(n.left)) edges.push({ from: id, to: (n.left as any).$ref });
+    if (n.right && isRef(n.right)) edges.push({ from: id, to: (n.right as any).$ref });
+
+    inorder(n.right, depth + 1);
+  }
+
+  inorder(root, 0);
+
+  const maxX = nodes.reduce((m, n) => Math.max(m, n.x), 0);
+  const maxY = nodes.reduce((m, n) => Math.max(m, n.y), 0);
+
+  const width = Math.max(520, (maxX + 1) * 90);
+  const height = Math.max(240, (maxY + 1) * 110);
+
+  const toPx = (n: { x: number; y: number }) => ({
+    px: 60 + n.x * 90,
+    py: 50 + n.y * 110,
+  });
+
+  const pos = new Map<string, { px: number; py: number }>();
+  nodes.forEach((n) => pos.set(n.id, toPx(n)));
+
+  return { nodes, edges, width, height, pos };
+}
+
+function TreeViz({ state, root }: { state: ExecutionState; root: Value | null }) {
+  const layout = buildTreeLayout(state, root);
+
+  if (!layout.nodes.length || !layout.pos) {
+    return (
+      <div className="dsViz">
+        <div className="dsEmptyMini">Empty tree</div>
+      </div>
+    );
+  }
+
+
+  return (
+    <div className="dsViz">
+      <div className="treeVizWrap">
+        <svg className="treeSvg" viewBox={`0 0 ${layout.width} ${layout.height}`} preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="nodeFill" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="rgba(124,92,255,0.35)" />
+              <stop offset="1" stopColor="rgba(45,226,230,0.22)" />
+            </linearGradient>
+            <linearGradient id="nodeStroke" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="rgba(200,230,255,0.55)" />
+              <stop offset="1" stopColor="rgba(185,215,255,0.45)" />
+            </linearGradient>
+            <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2.2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {layout.edges.map((e, i) => {
+            const a = layout.pos.get(e.from);
+            const b = layout.pos.get(e.to);
+            if (!a || !b) return null;
+            return <line key={i} className="treeEdge" x1={a.px} y1={a.py} x2={b.px} y2={b.py} />;
+          })}
+
+          {layout.nodes.map((n) => {
+            const p = layout.pos.get(n.id)!;
+            return (
+              <g key={n.id}>
+                <circle className="treeNodeCircle" cx={p.px} cy={p.py} r={22} />
+                <text className="treeNodeText" x={p.px} y={p.py + 5} textAnchor="middle">
+                  {n.label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 export default function StructuresPanel({ state }: { state: ExecutionState | null }) {
   if (!state) return null;
 
@@ -293,13 +458,7 @@ export default function StructuresPanel({ state }: { state: ExecutionState | nul
                 <div className="dsName">Stack</div>
                 <div className="dsMeta">{o.items.length} items</div>
               </div>
-              <div className="dsPills">
-                {(o.items as Value[]).slice(-12).reverse().map((v: Value, i: number) => (
-                  <span key={i} className="pill" title={fmtValue(state, v)}>
-                    {cut(fmtValue(state, v), 18)}
-                  </span>
-                ))}
-              </div>
+              <StackViz state={state} items={o.items as Value[]} />
             </div>
           ))}
 
@@ -309,13 +468,7 @@ export default function StructuresPanel({ state }: { state: ExecutionState | nul
                 <div className="dsName">Queue</div>
                 <div className="dsMeta">{o.items.length} items</div>
               </div>
-              <div className="dsPills">
-                {(o.items as Value[]).slice(0, 12).map((v: Value, i: number) => (
-                  <span key={i} className="pill" title={fmtValue(state, v)}>
-                    {cut(fmtValue(state, v), 18)}
-                  </span>
-                ))}
-              </div>
+              <QueueViz state={state} items={o.items as Value[]} />
             </div>
           ))}
 
@@ -325,23 +478,17 @@ export default function StructuresPanel({ state }: { state: ExecutionState | nul
                 <div className="dsName">Array</div>
                 <div className="dsMeta">{o.items.length} items</div>
               </div>
-              <div className="dsPills">
-                {(o.items as Value[]).slice(0, 12).map((v: Value, i: number) => (
-                  <span key={i} className="pill" title={fmtValue(state, v)}>
-                    {cut(fmtValue(state, v), 18)}
-                  </span>
-                ))}
-              </div>
+              <ArrayViz state={state} items={o.items as Value[]} />
             </div>
           ))}
 
           {trees.map(([id, o]) => (
-            <div key={id} className="dsCard objectCard">
+            <div key={id} className="dsCard">
               <div className="dsRow">
                 <div className="dsName">BinaryTree</div>
                 <div className="dsMeta">{o.root ? "root set" : "empty"}</div>
               </div>
-              <div style={{ opacity: 0.7, marginTop: 8 }}>root: {o.root ? fmtValue(state, o.root) : "null"}</div>
+              <TreeViz state={state} root={o.root as Value | null} />
             </div>
           ))}
 

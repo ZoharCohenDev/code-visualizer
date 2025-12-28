@@ -4,9 +4,10 @@ type Props = {
   onRun: () => void;
   onStep: () => void;
   onReset: () => void;
+  onOpenArsenal: () => void;
 };
 
-export default function Controls({ canStep, isRunning, onRun, onStep, onReset }: Props) {
+export default function Controls({ canStep, isRunning, onRun, onStep, onReset, onOpenArsenal }: Props) {
   return (
     <div className="controls">
       <button className="btn" onClick={onRun}>
@@ -19,6 +20,10 @@ export default function Controls({ canStep, isRunning, onRun, onStep, onReset }:
 
       <button className="btn ghost" onClick={onReset}>
         Reset
+      </button>
+
+      <button className="btn ghost" onClick={onOpenArsenal}>
+        Arsenal
       </button>
     </div>
   );
