@@ -1,8 +1,9 @@
+// interpreter/stmt.ts
 import type { AnyNode } from "../engine/parse";
 import type { ExecutionState, Step, Value } from "../engine/types";
 import { nodeLine } from "./ast";
-import { globals, pushStep, valueToString } from "./state";
-import { evalExpr, execUpdateExpr, setAssignable } from "./expr";
+import { globals, isRef, pushStep, valueToString } from "./state";
+import { evalExpr, execUpdateExpr } from "./expr";
 
 type ReturnSignal = { __return: true; value: Value };
 type BreakSignal = { __break: true };
@@ -19,27 +20,21 @@ function tick(maxOps: { n: number }) {
 
 function runBlock(node: AnyNode, state: ExecutionState, steps: Step[], maxOps: { n: number }) {
   if (!node) return;
-
   if (node.type === "BlockStatement") {
     for (const s of node.body) execStatement(s, state, steps, maxOps);
     return;
   }
-
   execStatement(node, state, steps, maxOps);
 }
 
 function callLabel(node: AnyNode): string {
-  if (!node) return "call";
   const callee = node.callee;
-
   if (callee?.type === "Identifier") return `call ${callee.name}()`;
-
   if (callee?.type === "MemberExpression") {
     const prop = callee.property?.name;
     if (prop) return `call .${prop}()`;
     return "call method";
   }
-
   return "call";
 }
 
@@ -47,35 +42,20 @@ export function execStatement(node: AnyNode, state: ExecutionState, steps: Step[
   if (!node) return;
 
   tick(maxOps);
-
   state.currentLine = nodeLine(node);
 
-  if (node.type === "BlockStatement") {
-    runBlock(node, state, steps, maxOps);
+  if (node.type === "ExpressionStatement") {
+    evalExpr(node.expression, state, steps, maxOps);
+    pushStep(steps, state, callLabel(node.expression));
     return;
-  }
-
-  if (node.type === "EmptyStatement") {
-    pushStep(steps, state, "empty");
-    return;
-  }
-
-  if (node.type === "BreakStatement") {
-    pushStep(steps, state, "break");
-    throw { __break: true } as BreakSignal;
-  }
-
-  if (node.type === "ContinueStatement") {
-    pushStep(steps, state, "continue");
-    throw { __continue: true } as ContinueSignal;
   }
 
   if (node.type === "VariableDeclaration") {
     const frame = globals(state);
-    for (const decl of node.declarations) {
-      const name = decl.id?.name;
-      if (!name) throw new Error("Only simple identifiers are supported in declarations");
-      const value = decl.init ? evalExpr(decl.init, state, steps, maxOps) : undefined;
+    for (const d of node.declarations) {
+      const name = d.id?.name;
+      if (!name) throw new Error("Unsupported declaration");
+      const value = d.init ? evalExpr(d.init, state, steps, maxOps) : undefined;
       frame.locals[name] = value;
       pushStep(steps, state, `${node.kind} ${name} = ${valueToString(state, value)}`);
     }
@@ -89,9 +69,48 @@ export function execStatement(node: AnyNode, state: ExecutionState, steps: Step[
     const params = (node.params || []).map((p: AnyNode) => p.name);
     const fnRef = { $ref: `h${state.heapSeq}` };
     state.heapSeq += 1;
-    state.heap[fnRef.$ref] = { kind: "Function", name, params, body: node.body };
+    state.heap[fnRef.$ref] = { kind: "Function", name, params, body: node.body } as any;
     frame.locals[name] = fnRef;
     pushStep(steps, state, `function ${name}(${params.join(",")})`);
+    return;
+  }
+
+  if (node.type === "ClassDeclaration") {
+    const frame = globals(state);
+    const name = node.id?.name;
+    if (!name) throw new Error("Class must have a name");
+
+    let superClass: Value | null = null;
+    if (node.superClass) {
+      if (node.superClass.type !== "Identifier") throw new Error("Only extends Identifier is supported");
+      const supName = node.superClass.name;
+      const v = frame.locals[supName];
+      if (!v || !isRef(v)) throw new Error(`Unknown superclass: ${supName}`);
+      superClass = v;
+    }
+
+    const classRef = { $ref: `h${state.heapSeq}` };
+    state.heapSeq += 1;
+
+    const methods: Record<string, Value> = {};
+    const bodyItems = (node.body?.body || []) as AnyNode[];
+
+    for (const it of bodyItems) {
+      if (it.type !== "MethodDefinition") continue;
+      const key = it.key;
+      const methodName = key?.name ?? key?.value;
+      const fn = it.value;
+      if (!methodName || !fn) continue;
+      const params = (fn.params || []).map((p: AnyNode) => p.name);
+      const fnRef = { $ref: `h${state.heapSeq}` };
+      state.heapSeq += 1;
+      state.heap[fnRef.$ref] = { kind: "Function", name: `${name}.${String(methodName)}`, params, body: fn.body } as any;
+      methods[String(methodName)] = fnRef;
+    }
+
+    state.heap[classRef.$ref] = { kind: "Class", name, superClass, methods } as any;
+    frame.locals[name] = classRef;
+    pushStep(steps, state, superClass ? `class ${name} extends ...` : `class ${name}`);
     return;
   }
 
@@ -101,72 +120,22 @@ export function execStatement(node: AnyNode, state: ExecutionState, steps: Step[
     throw { __return: true, value: v } as ReturnSignal;
   }
 
-  if (node.type === "ExpressionStatement") {
-    execStatement(node.expression, state, steps, maxOps);
-    return;
-  }
-
-  if (node.type === "CallExpression") {
-    const v = evalExpr(node, state, steps, maxOps);
-    pushStep(steps, state, `${callLabel(node)} -> ${valueToString(state, v)}`);
-    return;
-  }
-
-  if (node.type === "UpdateExpression") {
-    const v = execUpdateExpr(node, state);
-    pushStep(steps, state, `update -> ${valueToString(state, v)}`);
-    return;
-  }
-
-  if (node.type === "AssignmentExpression") {
-    const right = evalExpr(node.right, state, steps, maxOps);
-
-    if (node.operator === "=") {
-      setAssignable(node.left, state, right, steps, maxOps);
-      pushStep(steps, state, `assign -> ${valueToString(state, right)}`);
-      return;
-    }
-
-    const leftVal = evalExpr(node.left, state, steps, maxOps);
-
-    if (node.operator === "+=") {
-      const v = (leftVal as any) + (right as any);
-      setAssignable(node.left, state, v, steps, maxOps);
-      pushStep(steps, state, `+= -> ${valueToString(state, v)}`);
-      return;
-    }
-
-    if (node.operator === "-=") {
-      const v = (leftVal as any) - (right as any);
-      setAssignable(node.left, state, v, steps, maxOps);
-      pushStep(steps, state, `-= -> ${valueToString(state, v)}`);
-      return;
-    }
-
-    throw new Error(`Unsupported assignment operator: ${node.operator}`);
-  }
-
   if (node.type === "IfStatement") {
-    const testVal = evalExpr(node.test, state, steps, maxOps);
-    const isTrue = asBool(testVal);
-    pushStep(steps, state, `if -> ${isTrue ? "true" : "false"}`);
-    if (isTrue) runBlock(node.consequent, state, steps, maxOps);
+    const test = evalExpr(node.test, state, steps, maxOps);
+    pushStep(steps, state, `if (${valueToString(state, test)})`);
+    if (asBool(test)) runBlock(node.consequent, state, steps, maxOps);
     else if (node.alternate) runBlock(node.alternate, state, steps, maxOps);
+    return;
+  }
+
+  if (node.type === "BlockStatement") {
+    for (const s of node.body) execStatement(s, state, steps, maxOps);
     return;
   }
 
   if (node.type === "WhileStatement") {
     pushStep(steps, state, "while start");
-
-    while (true) {
-      tick(maxOps);
-
-      state.currentLine = nodeLine(node.test);
-      const testVal = evalExpr(node.test, state, steps, maxOps);
-      const ok = asBool(testVal);
-      pushStep(steps, state, `while test -> ${ok ? "true" : "false"}`);
-      if (!ok) break;
-
+    while (asBool(evalExpr(node.test, state, steps, maxOps))) {
       try {
         runBlock(node.body, state, steps, maxOps);
       } catch (e: any) {
@@ -174,81 +143,61 @@ export function execStatement(node: AnyNode, state: ExecutionState, steps: Step[
         if (e && e.__continue) continue;
         throw e;
       }
+      tick(maxOps);
     }
-
-    state.currentLine = nodeLine(node);
     pushStep(steps, state, "while end");
     return;
   }
 
-  if (node.type === "DoWhileStatement") {
-    pushStep(steps, state, "do while start");
+  if (node.type === "ForStatement") {
+    if (node.init) {
+      if (node.init.type === "VariableDeclaration") execStatement(node.init, state, steps, maxOps);
+      else evalExpr(node.init, state, steps, maxOps);
+    }
 
-    while (true) {
-      tick(maxOps);
-
+    pushStep(steps, state, "for start");
+    while (node.test ? asBool(evalExpr(node.test, state, steps, maxOps)) : true) {
       try {
         runBlock(node.body, state, steps, maxOps);
       } catch (e: any) {
         if (e && e.__break) break;
         if (e && e.__continue) {
-          // ממשיכים ישר לבדיקה
-        } else if (e) {
-          throw e;
+          if (node.update) evalExpr(node.update, state, steps, maxOps);
+          continue;
         }
+        throw e;
       }
 
-      state.currentLine = nodeLine(node.test);
-      const testVal = evalExpr(node.test, state, steps, maxOps);
-      const ok = asBool(testVal);
-      pushStep(steps, state, `do while test -> ${ok ? "true" : "false"}`);
-      if (!ok) break;
-    }
-
-    state.currentLine = nodeLine(node);
-    pushStep(steps, state, "do while end");
-    return;
-  }
-
-  if (node.type === "ForStatement") {
-    pushStep(steps, state, "for start");
-
-    if (node.init) {
-      execStatement(node.init, state, steps, maxOps);
-    }
-
-    while (true) {
+      if (node.update) evalExpr(node.update, state, steps, maxOps);
       tick(maxOps);
-
-      if (node.test) {
-        state.currentLine = nodeLine(node.test);
-        const t = evalExpr(node.test, state, steps, maxOps);
-        const ok = asBool(t);
-        pushStep(steps, state, `for test -> ${ok ? "true" : "false"}`);
-        if (!ok) break;
-      }
-
-      let shouldContinue = false;
-
-      try {
-        runBlock(node.body, state, steps, maxOps);
-      } catch (e: any) {
-        if (e && e.__break) break;
-        if (e && e.__continue) shouldContinue = true;
-        else throw e;
-      }
-
-      if (node.update) {
-        execStatement(node.update, state, steps, maxOps);
-      }
-
-      if (shouldContinue) continue;
     }
-
-    state.currentLine = nodeLine(node);
     pushStep(steps, state, "for end");
     return;
   }
+
+  if (node.type === "BreakStatement") {
+    pushStep(steps, state, "break");
+    throw { __break: true } as BreakSignal;
+  }
+
+  if (node.type === "ContinueStatement") {
+    pushStep(steps, state, "continue");
+    throw { __continue: true } as ContinueSignal;
+  }
+
+  if (node.type === "UpdateExpression") {
+    execUpdateExpr(node, state);
+    pushStep(steps, state, node.operator);
+    return;
+  }
+
+  if (node.type === "AssignmentExpression") {
+    evalExpr(node, state, steps, maxOps);
+    pushStep(steps, state, node.operator);
+    return;
+  }
+
+  if (node.type === "EmptyStatement") return;
 
   throw new Error(`Unsupported statement: ${node.type}`);
 }
