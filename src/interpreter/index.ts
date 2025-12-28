@@ -3,6 +3,8 @@ import { parseProgram } from "../engine/parse";
 import { pushStep, globals, deref, isRef } from "./state";
 import { execStatement, execFunctionBody } from "./stmt";
 
+const MAX_CALL_DEPTH = 200;
+
 export function runCodeToSteps(code: string): RunResult {
   const steps: Step[] = [];
   const state: ExecutionState = {
@@ -51,7 +53,9 @@ export function callUserFunctionByName(
   for (let i = 0; i < fnObj.params.length; i++) {
     newFrame.locals[fnObj.params[i]] = args[i];
   }
-
+  if (state.stack.length >= MAX_CALL_DEPTH) {
+    throw new Error(`Stopped: max call depth (${MAX_CALL_DEPTH}) exceeded`);
+  }
   state.stack.push(newFrame);
   pushStep(steps, state, `enter ${name}`);
   const ret = execFunctionBody(fnObj.body, state, steps, maxOps);
