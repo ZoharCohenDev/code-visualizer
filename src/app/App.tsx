@@ -11,22 +11,92 @@ import StructuresPanel from "../ui/StructuresPanel";
 import { runCodeToSteps } from "../interpreter/index";
 import type { ExecutionState, Step, Value } from "../engine/types";
 
-const DEFAULT_CODE = `let s = Stack();
+const DEFAULT_CODE = `let x = 1;
+let y = 2;
+console.log("start:", x, y);
+
+x += 3;
+y -= 1;
+console.log("after +=/-=:", x, y);
+
+if (x > y && !(y === 10)) {
+  console.log("if branch:", "x is bigger");
+} else {
+  console.log("else branch:", "y is bigger or equal");
+}
+
+// ----- Arrays -----
+let arr = [1, 2, 3];
+console.log("arr:", arr);
+console.log("arr length:", arr.length);
+console.log("arr[1]:", arr[1]);
+
+arr.push(4);
+arr.unshift(0);
+console.log("after push/unshift:", arr);
+
+console.log("pop:", arr.pop());
+console.log("shift:", arr.shift());
+console.log("after pop/shift:", arr);
+
+arr[1] = 999;
+console.log("after arr[1]=999:", arr);
+
+// ----- Objects -----
+let obj = { a: 10, b: 20 };
+console.log("obj.a:", obj.a);
+console.log("obj['b']:", obj["b"]);
+
+obj["c"] = 30;
+obj.a = obj.a + 5;
+console.log("after updates:", obj);
+
+// ----- While -----
+let i = 0;
+while (i < 3) {
+  console.log("while i:", i);
+  i++;
+}
+
+// ----- For -----
+for (let j = 0; j < 4; j++) {
+  console.log("for j:", j);
+}
+
+// ----- Stack -----
+let s = Stack();
 s.push(1);
 s.push(2);
-console.log("stack peek:", s.peek());
+s.push(3);
+console.log("stack size:", s.size);
+console.log("stack peek:", s.peek);
+console.log("stack pop:", s.pop());
+console.log("stack after pop peek:", s.peek);
 
+// ----- Queue -----
 let q = Queue();
 q.enqueue(10);
 q.enqueue(20);
+q.enqueue(30);
+console.log("queue size:", q.size);
+console.log("queue peek:", q.peek);
 console.log("queue dequeue:", q.dequeue());
+console.log("queue after dequeue peek:", q.peek);
 
+// ----- BinaryTree -----
 let t = BinaryTree();
 t.insert(5);
 t.insert(2);
 t.insert(8);
-console.log("contains 2:", t.contains(2));
-console.log("inOrder:", t.inOrder());
+t.insert(1);
+t.insert(3);
+console.log("tree contains 2:", t.contains(2));
+console.log("tree contains 7:", t.contains(7));
+
+let inorder = t.inOrder();
+console.log("tree inOrder:", inorder);
+console.log("inOrder length:", inorder.length);
+console.log("inOrder[2]:", inorder[2]);
 `;
 
 function isRef(v: Value): v is { $ref: string } {

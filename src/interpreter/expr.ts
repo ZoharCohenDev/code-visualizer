@@ -1,18 +1,28 @@
 import type { AnyNode } from "../engine/parse";
-import type { ExecutionState, Value } from "../engine/types";
-import { alloc, deref, globals, isRef, valueToString } from "./state";
-//מחזיר את הערך של מזהה נתון במצב ההרצה
+import type { ExecutionState, Step, Value } from "../engine/types";
+import { alloc, deref, globals, isRef, pushStep, valueToString } from "./state";
+import { nodeLine } from "./ast";
+import { execFunctionBody } from "./stmt";
+
+function findFrame(state: ExecutionState, name: string) {
+  for (let i = state.stack.length - 1; i >= 0; i--) {
+    const f = state.stack[i];
+    if (name in f.locals) return f;
+  }
+  return null;
+}
+
 function getId(state: ExecutionState, name: string): Value {
-  const frame = globals(state);
-  if (!(name in frame.locals)) throw new Error(`Undefined variable: ${name}`);
+  const frame = findFrame(state, name);
+  if (!frame) throw new Error(`Undefined variable: ${name}`);
   return frame.locals[name];
 }
-//מגדיר את הערך של מזהה נתון במצב ההרצה
+
 function setId(state: ExecutionState, name: string, v: Value) {
-  const frame = globals(state);
+  const frame = findFrame(state, name) ?? globals(state);
   frame.locals[name] = v;
 }
-//ממיר ערך למספר
+
 function asNumber(v: Value): number {
   if (typeof v === "number") return v;
   if (typeof v === "boolean") return v ? 1 : 0;
@@ -20,16 +30,15 @@ function asNumber(v: Value): number {
   if (v === null || v === undefined) return 0;
   throw new Error("Not a number");
 }
-//השוואה רופפת בין שני ערכים
+
 function looseEq(a: Value, b: Value): boolean {
-  // eslint-disable-next-line eqeqeq
   return (a as any) == (b as any);
 }
-//השוואה מחמירה בין שני ערכים
+
 function strictEq(a: Value, b: Value): boolean {
   return (a as any) === (b as any);
 }
-//מקבלת ערך שמצביע לאובייקט בהיפ , ומחזירה את הערך של שדה ממנו לפי הkind והprop שביקשת
+
 function getMember(state: ExecutionState, objV: Value, prop: string, computedKey?: Value): Value {
   if (!isRef(objV)) return undefined;
 
@@ -75,7 +84,7 @@ function getMember(state: ExecutionState, objV: Value, prop: string, computedKey
 
   return undefined;
 }
-//מבצעת קריאה למתודה של אובייקט בהיפ לפי הkind והprop שביקשת עם הפרמטרים args ומשנה את ההיפ בהתאם
+
 function callMember(state: ExecutionState, objV: Value, prop: string, args: Value[]): Value {
   if (!isRef(objV)) throw new Error("Method call on non-object");
 
@@ -185,8 +194,38 @@ function callMember(state: ExecutionState, objV: Value, prop: string, args: Valu
 
   throw new Error(`Unsupported method call: ${prop}`);
 }
-//מפרש ומחשב ביטוי נתון במצב ההרצה
-export function evalExpr(node: AnyNode, state: ExecutionState): Value {
+
+function callUserFunction(
+  state: ExecutionState,
+  steps: Step[],
+  maxOps: { n: number },
+  name: string,
+  args: Value[],
+  atLine: number
+): Value {
+  const fnV = getId(state, name);
+  if (!isRef(fnV)) throw new Error(`${name} is not a function ref`);
+  const fnObj = deref(state, fnV);
+  if (fnObj.kind !== "Function") throw new Error(`${name} is not a function`);
+
+  const newFrame = { name, locals: {} as Record<string, Value> };
+  for (let i = 0; i < fnObj.params.length; i++) {
+    newFrame.locals[fnObj.params[i]] = args[i];
+  }
+
+  state.stack.push(newFrame);
+  state.currentLine = atLine;
+  pushStep(steps, state, `enter ${name}`);
+
+  const ret = execFunctionBody(fnObj.body, state, steps, maxOps);
+
+  state.stack.pop();
+  state.currentLine = atLine;
+  pushStep(steps, state, `exit ${name} -> ${valueToString(state, ret)}`);
+  return ret;
+}
+
+export function evalExpr(node: AnyNode, state: ExecutionState, steps?: Step[], maxOps?: { n: number }): Value {
   if (!node) return undefined;
 
   if (node.type === "Literal") return node.value;
@@ -195,7 +234,7 @@ export function evalExpr(node: AnyNode, state: ExecutionState): Value {
 
   if (node.type === "ArrayExpression") {
     const els = (node.elements as Array<AnyNode | null>) || [];
-    const items: Value[] = els.map((e: AnyNode | null) => (e ? evalExpr(e, state) : undefined));
+    const items: Value[] = els.map((e: AnyNode | null) => (e ? evalExpr(e, state, steps, maxOps) : undefined));
     return alloc(state, { kind: "Array", items });
   }
 
@@ -205,13 +244,13 @@ export function evalExpr(node: AnyNode, state: ExecutionState): Value {
     for (const p of ps) {
       const key = p.key?.name ?? p.key?.value;
       if (key === undefined) continue;
-      props[String(key)] = evalExpr(p.value, state);
+      props[String(key)] = evalExpr(p.value, state, steps, maxOps);
     }
     return alloc(state, { kind: "Object", props });
   }
 
   if (node.type === "UnaryExpression") {
-    const v = evalExpr(node.argument, state);
+    const v = evalExpr(node.argument, state, steps, maxOps);
     if (node.operator === "+") return +asNumber(v);
     if (node.operator === "-") return -asNumber(v);
     if (node.operator === "!") return !v;
@@ -219,15 +258,20 @@ export function evalExpr(node: AnyNode, state: ExecutionState): Value {
   }
 
   if (node.type === "LogicalExpression") {
-    const left = evalExpr(node.left, state);
-    if (node.operator === "&&") return left ? evalExpr(node.right, state) : left;
-    if (node.operator === "||") return left ? left : evalExpr(node.right, state);
+    const left = evalExpr(node.left, state, steps, maxOps);
+    if (node.operator === "&&") return left ? evalExpr(node.right, state, steps, maxOps) : left;
+    if (node.operator === "||") return left ? left : evalExpr(node.right, state, steps, maxOps);
     throw new Error(`Unsupported logical operator: ${node.operator}`);
   }
 
+  if (node.type === "ConditionalExpression") {
+    const t = evalExpr(node.test, state, steps, maxOps);
+    return t ? evalExpr(node.consequent, state, steps, maxOps) : evalExpr(node.alternate, state, steps, maxOps);
+  }
+
   if (node.type === "BinaryExpression") {
-    const left = evalExpr(node.left, state);
-    const right = evalExpr(node.right, state);
+    const left = evalExpr(node.left, state, steps, maxOps);
+    const right = evalExpr(node.right, state, steps, maxOps);
 
     switch (node.operator) {
       case "+": return (left as any) + (right as any);
@@ -248,10 +292,10 @@ export function evalExpr(node: AnyNode, state: ExecutionState): Value {
   }
 
   if (node.type === "MemberExpression") {
-    const objV = evalExpr(node.object, state);
+    const objV = evalExpr(node.object, state, steps, maxOps);
     const computed = !!node.computed;
     const prop = computed ? "" : node.property?.name;
-    const key = computed ? evalExpr(node.property, state) : undefined;
+    const key = computed ? evalExpr(node.property, state, steps, maxOps) : undefined;
     return getMember(state, objV, prop, key);
   }
 
@@ -265,7 +309,7 @@ export function evalExpr(node: AnyNode, state: ExecutionState): Value {
       callee.property?.type === "Identifier" &&
       callee.property.name === "log"
     ) {
-      const args: Value[] = ((node.arguments as AnyNode[]) || []).map((a: AnyNode) => evalExpr(a, state));
+      const args: Value[] = ((node.arguments as AnyNode[]) || []).map((a: AnyNode) => evalExpr(a, state, steps, maxOps));
       const out = args.map((x: Value) => valueToString(state, x)).join(" ");
       state.console.push(out);
       return undefined;
@@ -278,21 +322,18 @@ export function evalExpr(node: AnyNode, state: ExecutionState): Value {
       if (name === "Queue") return alloc(state, { kind: "Queue", items: [] });
       if (name === "BinaryTree") return alloc(state, { kind: "BinaryTree", root: null });
 
-      const fnV = getId(state, name);
-      if (isRef(fnV)) {
-        const fnObj = deref(state, fnV);
-        if (fnObj.kind !== "Function") throw new Error(`${name} is not a function`);
-        return { $ref: fnV.$ref };
-      }
+      const args: Value[] = ((node.arguments as AnyNode[]) || []).map((a: AnyNode) => evalExpr(a, state, steps, maxOps));
 
-      throw new Error(`Unknown function: ${name}`);
+      if (!steps || !maxOps) throw new Error("Function calls require steps/maxOps context");
+      const atLine = nodeLine(node);
+      return callUserFunction(state, steps, maxOps, name, args, atLine);
     }
 
     if (callee?.type === "MemberExpression") {
-      const objV = evalExpr(callee.object, state);
+      const objV = evalExpr(callee.object, state, steps, maxOps);
       const propName = callee.property?.name;
       if (!propName) throw new Error("Only identifier methods are supported");
-      const args: Value[] = ((node.arguments as AnyNode[]) || []).map((a: AnyNode) => evalExpr(a, state));
+      const args: Value[] = ((node.arguments as AnyNode[]) || []).map((a: AnyNode) => evalExpr(a, state, steps, maxOps));
       return callMember(state, objV, propName, args);
     }
 
@@ -301,7 +342,7 @@ export function evalExpr(node: AnyNode, state: ExecutionState): Value {
 
   throw new Error(`Unsupported expression: ${node.type}`);
 }
-//מבצע עדכון על ביטוי נתון במצב ההרצה: מגדיל או מקטין את הערך של מזהה ב-1 בהתאם לאופרטור ומחזיר את הערך המתאים לפי אם העדכון הוא פריפיקס או פוסטפיקס
+
 export function execUpdateExpr(node: AnyNode, state: ExecutionState): Value {
   if (node.type !== "UpdateExpression") throw new Error("Not update expr");
   if (node.argument?.type !== "Identifier") throw new Error("Only identifier update is supported");
@@ -312,28 +353,28 @@ export function execUpdateExpr(node: AnyNode, state: ExecutionState): Value {
   setId(state, name, next);
   return node.prefix ? next : curNum;
 }
-// מבצע עדכון על ביטוי שניתן להקצות לו ערך במצב ההרצה (השמה) עם הערך הנתון
-export function setAssignable(node: AnyNode, state: ExecutionState, value: Value) {
+
+export function setAssignable(node: AnyNode, state: ExecutionState, value: Value, steps?: Step[], maxOps?: { n: number }) {
   if (node.type === "Identifier") {
     setId(state, node.name, value);
     return;
   }
 
   if (node.type === "MemberExpression") {
-    const objV = evalExpr(node.object, state);
+    const objV = evalExpr(node.object, state, steps, maxOps);
     if (!isRef(objV)) throw new Error("Assignment to member on non-object");
     const o = deref(state, objV);
 
     if (o.kind === "Array") {
       if (!node.computed) throw new Error("Array assignment requires computed index");
-      const idxV = evalExpr(node.property, state);
+      const idxV = evalExpr(node.property, state, steps, maxOps);
       const idx = asNumber(idxV);
       o.items[idx] = value;
       return;
     }
 
     if (o.kind === "Object") {
-      const key = node.computed ? String(evalExpr(node.property, state)) : String(node.property?.name);
+      const key = node.computed ? String(evalExpr(node.property, state, steps, maxOps)) : String(node.property?.name);
       o.props[key] = value;
       return;
     }
