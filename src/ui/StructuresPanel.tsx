@@ -417,7 +417,19 @@ function TreeViz({ state, root }: { state: ExecutionState; root: Value | null })
   );
 }
 
-export default function StructuresPanel({ state }: { state: ExecutionState | null }) {
+export type DSFocus = {
+  kind: "Class" | "Instance" | "CallTrace" | "Stack" | "Queue" | "Array" | "BinaryTree" | "Object";
+  id: string;
+};
+
+type Props = {
+  state: ExecutionState | null;
+  onOpen?: (focus: DSFocus) => void;
+  focus?: DSFocus | null;
+  inModal?: boolean;
+};
+
+export default function StructuresPanel({ state, onOpen, focus, inModal }: Props) {
   if (!state) return null;
 
   const heapEntries = Object.entries(state.heap) as [string, any][];
@@ -431,8 +443,37 @@ export default function StructuresPanel({ state }: { state: ExecutionState | nul
   const instances = heapEntries.filter(([, o]) => o.kind === "Instance");
   const traces = heapEntries.filter(([, o]) => o.kind === "CallTrace");
 
+  const want = (kind: DSFocus["kind"], id: string) => {
+    if (!focus) return true;
+    return focus.kind === kind && focus.id === id;
+  };
+
+  const clickable = (kind: DSFocus["kind"], id: string) => ({
+    role: onOpen ? "button" : undefined,
+    tabIndex: onOpen ? 0 : undefined,
+    onClick: onOpen ? () => onOpen({ kind, id }) : undefined,
+    onKeyDown: onOpen
+      ? (e: any) => {
+          if (e.key === "Enter" || e.key === " ") onOpen({ kind, id });
+        }
+      : undefined,
+    className: onOpen ? "dsCard dsCardClickable" : "dsCard",
+  });
+
+  const clickableObjectCard = (kind: DSFocus["kind"], id: string) => ({
+    role: onOpen ? "button" : undefined,
+    tabIndex: onOpen ? 0 : undefined,
+    onClick: onOpen ? () => onOpen({ kind, id }) : undefined,
+    onKeyDown: onOpen
+      ? (e: any) => {
+          if (e.key === "Enter" || e.key === " ") onOpen({ kind, id });
+        }
+      : undefined,
+    className: onOpen ? "dsCard objectCard dsCardClickable" : "dsCard objectCard",
+  });
+
   return (
-    <div className="panel dsPanel">
+    <div className={inModal ? "panel dsPanel dsPanelInModal" : "panel dsPanel"}>
       <div className="panelHead">
         <div className="panelTitle">Data Structures</div>
         <div className="panelSub">visual trace</div>
@@ -440,67 +481,97 @@ export default function StructuresPanel({ state }: { state: ExecutionState | nul
 
       <div className="panelBody">
         <div className="dsGrid">
-          {classes.map(([id]) => (
-            <ClassViz key={id} state={state} id={id} />
-          ))}
-
-          {instances.map(([id]) => (
-            <InstanceViz key={id} state={state} id={id} />
-          ))}
-
-          {traces.map(([id]) => (
-            <CallTraceViz key={id} state={state} id={id} />
-          ))}
-
-          {stacks.map(([id, o]) => (
-            <div key={id} className="dsCard">
-              <div className="dsRow">
-                <div className="dsName">Stack</div>
-                <div className="dsMeta">{o.items.length} items</div>
+          {classes.map(([id]) => {
+            if (!want("Class", id)) return null;
+            return (
+              <div key={id} {...clickableObjectCard("Class", id)}>
+                <ClassViz state={state} id={id} />
               </div>
-              <StackViz state={state} items={o.items as Value[]} />
-            </div>
-          ))}
+            );
+          })}
 
-          {queues.map(([id, o]) => (
-            <div key={id} className="dsCard">
-              <div className="dsRow">
-                <div className="dsName">Queue</div>
-                <div className="dsMeta">{o.items.length} items</div>
+          {instances.map(([id]) => {
+            if (!want("Instance", id)) return null;
+            return (
+              <div key={id} {...clickableObjectCard("Instance", id)}>
+                <InstanceViz state={state} id={id} />
               </div>
-              <QueueViz state={state} items={o.items as Value[]} />
-            </div>
-          ))}
+            );
+          })}
 
-          {arrays.map(([id, o]) => (
-            <div key={id} className="dsCard">
-              <div className="dsRow">
-                <div className="dsName">Array</div>
-                <div className="dsMeta">{o.items.length} items</div>
+          {traces.map(([id]) => {
+            if (!want("CallTrace", id)) return null;
+            return (
+              <div key={id} {...clickableObjectCard("CallTrace", id)}>
+                <CallTraceViz state={state} id={id} />
               </div>
-              <ArrayViz state={state} items={o.items as Value[]} />
-            </div>
-          ))}
+            );
+          })}
 
-          {trees.map(([id, o]) => (
-            <div key={id} className="dsCard">
-              <div className="dsRow">
-                <div className="dsName">BinaryTree</div>
-                <div className="dsMeta">{o.root ? "root set" : "empty"}</div>
+          {stacks.map(([id, o]) => {
+            if (!want("Stack", id)) return null;
+            return (
+              <div key={id} {...clickable("Stack", id)}>
+                <div className="dsRow">
+                  <div className="dsName">Stack</div>
+                  <div className="dsMeta">{o.items.length} items</div>
+                </div>
+                <StackViz state={state} items={o.items as Value[]} />
               </div>
-              <TreeViz state={state} root={o.root as Value | null} />
-            </div>
-          ))}
+            );
+          })}
 
-          {objects.map(([id, o]) => (
-            <div key={id} className="dsCard objectCard">
-              <div className="dsRow">
-                <div className="dsName">Object</div>
-                <div className="dsMeta">{Object.keys(o.props || {}).length} props</div>
+          {queues.map(([id, o]) => {
+            if (!want("Queue", id)) return null;
+            return (
+              <div key={id} {...clickable("Queue", id)}>
+                <div className="dsRow">
+                  <div className="dsName">Queue</div>
+                  <div className="dsMeta">{o.items.length} items</div>
+                </div>
+                <QueueViz state={state} items={o.items as Value[]} />
               </div>
-              <ObjectViz state={state} props={(o.props || {}) as Record<string, Value>} />
-            </div>
-          ))}
+            );
+          })}
+
+          {arrays.map(([id, o]) => {
+            if (!want("Array", id)) return null;
+            return (
+              <div key={id} {...clickable("Array", id)}>
+                <div className="dsRow">
+                  <div className="dsName">Array</div>
+                  <div className="dsMeta">{o.items.length} items</div>
+                </div>
+                <ArrayViz state={state} items={o.items as Value[]} />
+              </div>
+            );
+          })}
+
+          {trees.map(([id, o]) => {
+            if (!want("BinaryTree", id)) return null;
+            return (
+              <div key={id} {...clickable("BinaryTree", id)}>
+                <div className="dsRow">
+                  <div className="dsName">BinaryTree</div>
+                  <div className="dsMeta">{o.root ? "root set" : "empty"}</div>
+                </div>
+                <TreeViz state={state} root={o.root as Value | null} />
+              </div>
+            );
+          })}
+
+          {objects.map(([id, o]) => {
+            if (!want("Object", id)) return null;
+            return (
+              <div key={id} {...clickableObjectCard("Object", id)}>
+                <div className="dsRow">
+                  <div className="dsName">Object</div>
+                  <div className="dsMeta">{Object.keys(o.props || {}).length} props</div>
+                </div>
+                <ObjectViz state={state} props={(o.props || {}) as Record<string, Value>} />
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
